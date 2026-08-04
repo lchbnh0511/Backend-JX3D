@@ -293,9 +293,9 @@ public class GameSession : IEventHandler
 
     public void OnNetCommandSit(NPC_SIT_SYNC data)
     {
-        //Log($"{data}");
-        
-        
+        if (data.ID != State.PlayerId) return;
+
+        State.Waiters.Complete(data);
     }
 
     public void OnNetCommandSetPos(NPC_PLAYER_TYPE_NORMAL_SYNC data)

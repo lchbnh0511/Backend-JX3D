@@ -1,7 +1,9 @@
 using BackendJX3D.Application.DTOs.Response.Player;
 using BackendJX3D.Application.Interfaces.IServices;
+using BackendJX3D.Core.Base;
 using BackendJX3D.Infrastructure.Auth;
 using BackendJX3D.Infrastructure.Session;
+using Network.Header;
 
 namespace BackendJX3D.Application.Services;
 
@@ -73,20 +75,31 @@ public class PlayerService : IPlayerService
             }
         };
 
+        
         return await Task.FromResult<PlayerResponse?>(response);
     }
 
     public async Task<PlayerSittingResponse> Sitting(bool bSit)
     {
         var session = _sessionManager.Get(_currentUser.SessionId);
+        var state = session.Handler.State;
+
+        state.Waiters.Begin<NPC_SIT_SYNC>();
+
         session.GameServer.GetSender().SendPlayerSitPacket(bSit);
 
-        var response = new PlayerSittingResponse()
+        var data = await state.Waiters.WaitAsync<NPC_SIT_SYNC>(TimeSpan.FromSeconds(2));
+
+        if (data == null)
+            throw new BaseException.ErrorException(
+                504,
+                "gateway_timeout",
+                "Game server không phản hồi lệnh ngồi.");
+
+        return new PlayerSittingResponse
         {
-            ID = 12123123,
-            Dir = 213123,
+            ID = data.Value.ID,
+            Dir = data.Value.Dir,
         };
-        
-        return await Task.FromResult<PlayerSittingResponse>(response);
     }
 }
