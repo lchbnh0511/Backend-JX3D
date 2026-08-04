@@ -1,0 +1,22 @@
+using BackendJX3D.Infrastructure.Repositories.IRepository;
+using BackendJX3D.Infrastructure.Repositories.Repository;
+namespace BackendJX3D.Infrastructure.Session.Data;
+using Network.Header;
+
+public class PlayerState
+{
+    public uint PlayerId { get; set; }
+    public string Name { get; set; }
+
+    public CURPLAYER_SYNC? CurPlayer { get; set; }
+
+    public WORLD_SYNC? World { get; set; }
+
+    public CURPLAYER_NORMAL_SYNC? PlayerStats { get; set; }
+    public PLAYER_ATTRIBUTE_SYNC? Attribute { get; set; }
+    public IItemRepository Items { get; } = new ItemRepository();
+    public ISkillRepository Skills { get; } = new SkillRepository();
+    public INpcRepository Npcs { get; } = new NpcRepository();
+    public ITaskRepository Tasks { get; } = new TaskRepository();
+    public IChatRepository Chats { get; } = new ChatRepository();
+}
