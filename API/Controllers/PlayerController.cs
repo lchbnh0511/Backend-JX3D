@@ -18,10 +18,17 @@ public class PlayerController : ControllerBase
         playerService = service;
     }
     
-    [HttpGet("stats")]
-    public async Task<ActionResult<BaseResponse<PlayerStatsResponse>>> GetStats()
+    [HttpGet()]
+    public async Task<ActionResult<BaseResponse<PlayerResponse>>> GetPlayer()
     {
-        var result = await playerService.GetStats();
-        return Ok(BaseResponse<PlayerStatsResponse>.OkResponse(result, "Lấy Stats thành công."));
+        var result = await playerService.GetPlayer();
+        return Ok(BaseResponse<PlayerResponse>.OkResponse(result, "Get Player thành công."));
     }
-}
+    
+    [HttpPost("sitting")]
+    public async Task<ActionResult<BaseResponse<PlayerSittingResponse>>> SittingPlayer(bool bSit)
+    {
+        var result = await playerService.Sitting(bSit);
+        return Ok(BaseResponse<PlayerSittingResponse>.OkResponse(result, "Sitting: " + bSit));   
+    }
+}                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           

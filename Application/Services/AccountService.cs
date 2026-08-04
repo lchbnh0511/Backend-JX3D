@@ -171,6 +171,9 @@ public class AccountService : IAccountService
                 GameSession.GetLoginServerMessage(session.Bishop.LoginServerResultCode));
         }
 
+        // Vào game xong -> ping game server 3s/lần để giữ kết nối
+        session.GameServer.StartPing();
+
         return "Success";
     }
     
@@ -182,6 +185,7 @@ public class AccountService : IAccountService
             throw new BaseException.NotFoundException("not_found", "null");
         
         Console.WriteLine("LogoutServerAccount Name: " + session.Handler.State.Name);
+        session.GameServer.StopPing();
         session.GameServer?.GetSender()?.SendLogoutPacket(session.Handler.State.Name);
         session.Bishop.Client = null!;
         

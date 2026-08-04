@@ -157,6 +157,8 @@ public class GameSession : IEventHandler
     public void OnSyncCurPlayer(CURPLAYER_SYNC data)
     {
         //Log($"{data}");
+        State.CurPlayer = data;
+        Log("[OnSyncCurPlayer] " + data.m_dwID);
     }
 
     public void Ons2cSyncAllSkill(SKILL_SEND_ALL_SYNC_DATA data)
@@ -175,8 +177,7 @@ public class GameSession : IEventHandler
 
     public void OnSyncPlayer(PLAYER_SYNC data)
     {
-        // State.PlayerId = data.ID;
-        // Log($"OnSyncPlayer {data.ID}");
+         Log($"[OnSyncPlayer] {data.ID} ");
     }
 
     public void OnSyncPlayerMin(PLAYER_NORMAL_SYNC data)
@@ -293,6 +294,8 @@ public class GameSession : IEventHandler
     public void OnNetCommandSit(NPC_SIT_SYNC data)
     {
         //Log($"{data}");
+        
+        
     }
 
     public void OnNetCommandSetPos(NPC_PLAYER_TYPE_NORMAL_SYNC data)
@@ -538,7 +541,7 @@ public class GameSession : IEventHandler
 
     public void OnServerReplyClientPing(PING_COMMAND data)
     {
-        //Log($"{data}");
+        Log($"[OnServerReplyClientPing] PING_COMMAND " + data.m_dwTime);
     }
 
     public void OnRequestNpcFail(NPC_REQUEST_FAIL data)

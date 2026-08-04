@@ -14,8 +14,6 @@ public class NpcRepository : INpcRepository
 
     public void AddOrUpdate(NPC_SYNC npc)
     {
-        // if (!_npcs.TryGetValue(skills.SkillId, out var oldSkill)) return;
-
         _npcs[npc.ID] = npc;
     }
 

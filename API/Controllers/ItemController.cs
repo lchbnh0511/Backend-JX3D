@@ -29,7 +29,7 @@ public class ItemController : ControllerBase
     [HttpGet("equipment/{type}")]
     public async Task<ActionResult<BaseResponse<List<ItemResponse>>>> GetListItemEquip(int type)
     {
-        var result = await itemService.GetListItemByPlace((int)ITEM_POSITION.pos_equip);
+        var result = await itemService.GetListItemByPlace(type);
         return Ok(BaseResponse<List<ItemResponse>>.OkResponse(result, "Lấy danh sách vật phẩm đang trang bị thành công."));
     }
 }
