@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../build/BackendJX3D.props" />
-</Project>
