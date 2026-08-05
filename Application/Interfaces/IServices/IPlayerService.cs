@@ -5,5 +5,7 @@ namespace BackendJX3D.Application.Interfaces.IServices;
 public interface IPlayerService
 {
     Task<PlayerResponse?> GetPlayer();
-    Task<PlayerSittingResponse> Sitting(bool bSit);
+    Task<PlayerSittingResponse> Sitting();
+    Task<PlayerRideResponse> RideHorse();
+    Task<PlayerRunningResponse> Running(int nDesX,  int nDesY);
 }

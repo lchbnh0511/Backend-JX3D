@@ -6,7 +6,7 @@ using Network.Header;
 public class PlayerState
 {
     public uint PlayerId { get; set; }
-    public string Name { get; set; }
+    public string? Name { get; set; }
 
     public CURPLAYER_SYNC? CurPlayer { get; set; }
 

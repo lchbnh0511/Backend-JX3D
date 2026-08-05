@@ -1,4 +1,5 @@
 using BackendJX3D.Application.DTOs.Response.Player;
+using BackendJX3D.Application.Interfaces.IMapper;
 using BackendJX3D.Application.Interfaces.IServices;
 using BackendJX3D.Core.Base;
 using BackendJX3D.Infrastructure.Auth;
@@ -11,95 +12,82 @@ public class PlayerService : IPlayerService
 {
     private readonly ISessionManager _sessionManager;
     private readonly ICurrentUser _currentUser;
+    private readonly IPlayerMapper _playerMapper;
+    
+    private const uint TIME_WAIT_ASYNC = 3;
 
-    public PlayerService(ISessionManager sessionManager, ICurrentUser currentUser)
+    public PlayerService(ISessionManager sessionManager, ICurrentUser currentUser, IPlayerMapper playerMapper)
     {
         _sessionManager = sessionManager;
         _currentUser = currentUser;
+        _playerMapper = playerMapper;
     }
 
 
     public async Task<PlayerResponse?> GetPlayer()
     {
         var session = _sessionManager.Get(_currentUser.SessionId);
-        var playerStats = session.Handler.State.PlayerStats;
-        var curPlayer = session.Handler.State.CurPlayer;
+        var state = session.Handler.State;
 
-        if (playerStats == null || curPlayer == null)
+        if (state.CurPlayer == null || state.PlayerStats == null)
             return await Task.FromResult<PlayerResponse?>(null);
 
-        var response = new PlayerResponse
-        {
-            PlayerInfo = new PlayerInfoResponse
-            {
-                m_dwID = curPlayer.Value.m_dwID,
-                m_btLevel = curPlayer.Value.m_btLevel,
-                m_bSex = curPlayer.Value.m_bSex,
-                m_btKind = curPlayer.Value.m_btKind,
-                m_btSeries = curPlayer.Value.m_btSeries,
-                m_wLifeMax = curPlayer.Value.m_wLifeMax,
-                m_wStaminaMax = curPlayer.Value.m_wStaminaMax,
-                m_wManaMax = curPlayer.Value.m_wManaMax,
-                m_wAttributePoint = curPlayer.Value.m_wAttributePoint,
-                m_wSkillPoint = curPlayer.Value.m_wSkillPoint,
-                m_wStrength = curPlayer.Value.m_wStrength,
-                m_wDexterity = curPlayer.Value.m_wDexterity,
-                m_wVitality = curPlayer.Value.m_wVitality,
-                m_wEngergy = curPlayer.Value.m_wEngergy,
-                m_wLucky = curPlayer.Value.m_wLucky,
-                m_nExp = curPlayer.Value.m_nExp,
-                m_nNextLevelExp = curPlayer.Value.m_nNextLevelExp,
-                m_btTranslife = curPlayer.Value.m_btTranslife,
-                m_byExchangeServer = curPlayer.Value.m_byExchangeServer,
-                m_byGameSvrIndex = curPlayer.Value.m_byGameSvrIndex,
-                m_byServerStatus = curPlayer.Value.m_byServerStatus,
-                m_byReserve2 = curPlayer.Value.m_byReserve2,
-                m_btCurFaction = curPlayer.Value.m_btCurFaction,
-                m_btFirstFaction = curPlayer.Value.m_btFirstFaction,
-                m_nFactionAddTimes = curPlayer.Value.m_nFactionAddTimes,
-                m_wServerID = curPlayer.Value.m_wServerID,
-                m_wEngergySetDamageV = curPlayer.Value.m_wEngergySetDamageV,
-                m_nApplyHorseAttrib = curPlayer.Value.m_nApplyHorseAttrib,
-                m_nMoney1 = curPlayer.Value.m_nMoney1,
-                m_nMoney2 = curPlayer.Value.m_nMoney2,
-                m_btEquipExpand = curPlayer.Value.m_btEquipExpand,
-                m_btExpandBox = curPlayer.Value.m_btExpandBox,
-            },
-            Stats = new PlayerStatsResponse
-            {
-                Life = playerStats.Value.m_shLife,
-                Stamina = playerStats.Value.m_shStamina,
-                Mana = playerStats.Value.m_shMana,
-                Point = playerStats.Value.m_shSPoint,
-                TeamData = playerStats.Value.m_btTeamData,
-            }
-        };
+        var response = _playerMapper.FromPlayerRequest(state.CurPlayer.Value, state.PlayerStats.Value, state.Name!);
 
-        
         return await Task.FromResult<PlayerResponse?>(response);
     }
 
-    public async Task<PlayerSittingResponse> Sitting(bool bSit)
+    public async Task<PlayerSittingResponse> Sitting()
     {
         var session = _sessionManager.Get(_currentUser.SessionId);
-        var state = session.Handler.State;
-
-        state.Waiters.Begin<NPC_SIT_SYNC>();
-
-        session.GameServer.GetSender().SendPlayerSitPacket(bSit);
-
-        var data = await state.Waiters.WaitAsync<NPC_SIT_SYNC>(TimeSpan.FromSeconds(2));
+        var sender = session.GameServer.GetSender();
+        var waiters = session.Handler.State.Waiters;
+        
+        var data = await waiters.SendAndWaitAsync<NPC_SIT_SYNC>(() =>
+                sender.SendPlayerSitPacket(true), TimeSpan.FromSeconds(TIME_WAIT_ASYNC));
 
         if (data == null)
             throw new BaseException.ErrorException(
                 504,
-                "gateway_timeout",
+                "Gameserver_timeout",
                 "Game server không phản hồi lệnh ngồi.");
 
-        return new PlayerSittingResponse
-        {
-            ID = data.Value.ID,
-            Dir = data.Value.Dir,
-        };
+        return _playerMapper.FromSittingRequest(data.Value);
+    }
+
+    public async Task<PlayerRideResponse> RideHorse()
+    {
+        var session = _sessionManager.Get(_currentUser.SessionId);
+        var sender = session.GameServer.GetSender();
+        var waiters = session.Handler.State.Waiters;
+        
+        var data = await waiters.SendAndWaitAsync<NPC_HORSE_SYNC>(() => 
+            sender.SendPlayerRidePacket(), TimeSpan.FromSeconds(TIME_WAIT_ASYNC));
+
+        if (data == null)
+            throw new BaseException.ErrorException(
+                504,
+                "Gameserver_timeout",
+                "Game server không phản hồi lệnh RideHorse.");
+
+        return _playerMapper.FromPlayerRideRequest(data.Value);
+    }
+    
+    public async Task<PlayerRunningResponse> Running(int nDesX,  int nDesY)
+    {
+        var session = _sessionManager.Get(_currentUser.SessionId);
+        var sender = session.GameServer.GetSender();
+        var waiters = session.Handler.State.Waiters;
+        
+        var data = await waiters.SendAndWaitAsync<NPC_RUN_SYNC>(() => 
+            sender.SendPlayerRunPacket(nDesX, nDesY), TimeSpan.FromSeconds(TIME_WAIT_ASYNC));
+
+        if (data == null)
+            throw new BaseException.ErrorException(
+                504,
+                "Gameserver_timeout",
+                "Game server không phản hồi lệnh Running.");
+
+        return _playerMapper.FromPlayerRunningRequest(data.Value);
     }
 }

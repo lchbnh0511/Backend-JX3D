@@ -1,38 +1,46 @@
-namespace BackendJX3D.Infrastructure.Session.Data;
+using BackendJX3D.Core.Base;
 
+namespace BackendJX3D.Infrastructure.Session.Data;
 
 public sealed class PacketWaiter<T> where T : struct
 {
     private TaskCompletionSource<T>? _tcs;
 
-    /// <summary>Mở chỗ chờ. Phải gọi TRƯỚC khi gửi packet để không bị miss reply về sớm.</summary>
-    public void Begin()
+    /// <summary>
+    /// Giữ chỗ chờ -> gửi lệnh -> chờ reply. Trả null nếu GS không phản hồi trong timeout.
+    /// Ném ConflictException (409) nếu đang có lệnh cùng loại chưa xong.
+    /// </summary>
+    public async Task<T?> SendAndWaitAsync(Action send, TimeSpan timeout)
     {
-        _tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        // Chỉ giành được chỗ khi đang trống -> chống client spam command
+        if (Interlocked.CompareExchange(ref _tcs, tcs, null) != null)
+            throw new BaseException.ConflictException(
+                "command_in_progress",
+                "Lệnh trước chưa hoàn tất, thử lại sau.");
+
+        try
+        {
+            // Gửi SAU khi đã giữ chỗ -> reply về sớm cỡ nào cũng không mất
+            send();
+
+            return await tcs.Task.WaitAsync(timeout);
+        }
+        catch (TimeoutException)
+        {
+            return null;
+        }
+        finally
+        {
+            // Nhả chỗ. Nếu thành công thì Complete() đã lấy ra rồi, CompareExchange không làm gì.
+            Interlocked.CompareExchange(ref _tcs, null, tcs);
+        }
     }
 
     /// <summary>Recv thread gọi khi packet về. Không ai chờ thì bỏ qua.</summary>
     public void Complete(T data)
     {
         Interlocked.Exchange(ref _tcs, null)?.TrySetResult(data);
-    }
-
-    /// <summary>Chờ packet, trả null nếu quá hạn hoặc chưa Begin().</summary>
-    public async Task<T?> WaitAsync(TimeSpan timeout)
-    {
-        var tcs = _tcs;
-
-        if (tcs == null)
-            return null;
-
-        try
-        {
-            return await tcs.Task.WaitAsync(timeout);
-        }
-        catch (TimeoutException)
-        {
-            Interlocked.CompareExchange(ref _tcs, null, tcs);
-            return null;
-        }
     }
 }

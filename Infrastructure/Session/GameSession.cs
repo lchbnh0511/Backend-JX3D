@@ -258,7 +258,9 @@ public class GameSession : IEventHandler
 
     public void OnNetCommandRun(NPC_RUN_SYNC data)
     {
-        //Log($"{data}");
+        Log("[OnNetCommandRun] ProtocolType " + data.ProtocolType + " ID " + data.ID + " nMpsX " + data.nMpsX + " nMpsY " + data.nMpsY);
+        if (State.PlayerId != data.ID) return;
+        State.Waiters.Complete(data);
     }
 
     public void OnNetCommandJump(NPC_JUMP_SYNC data)
@@ -310,7 +312,10 @@ public class GameSession : IEventHandler
 
     public void OnNetCommandSetHorse(NPC_HORSE_SYNC data)
     {
-        //Log($"{data}");
+        Log($"[OnNetCommandSetHorse] m_dwID "  + data.m_dwID + " m_bRideHorse " + data.m_bRideHorse);
+        if (data.m_dwID != State.PlayerId) return;
+        
+        State.Waiters.Complete(data);
     }
 
     public void Ons2cNpcSetMenuState(NPC_SET_MENU_STATE_SYNC data)

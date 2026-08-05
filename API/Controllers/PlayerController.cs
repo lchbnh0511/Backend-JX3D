@@ -26,9 +26,23 @@ public class PlayerController : ControllerBase
     }
     
     [HttpPost("sitting")]
-    public async Task<ActionResult<BaseResponse<PlayerSittingResponse>>> SittingPlayer(bool bSit)
+    public async Task<ActionResult<BaseResponse<PlayerSittingResponse>>> PlayerSitting()
     {
-        var result = await playerService.Sitting(bSit);
-        return Ok(BaseResponse<PlayerSittingResponse>.OkResponse(result, "Sitting: " + bSit));   
+        var result = await playerService.Sitting();
+        return Ok(BaseResponse<PlayerSittingResponse>.OkResponse(result, "Sitting"));   
+    }
+    
+    [HttpPost("ride_horse")]
+    public async Task<ActionResult<BaseResponse<PlayerRideResponse>>> PlayerRideHorse()
+    {
+        var result = await playerService.RideHorse();
+        return Ok(BaseResponse<PlayerRideResponse>.OkResponse(result, "Ride Horse Success"));   
+    }
+    
+    [HttpPost("running")]
+    public async Task<ActionResult<BaseResponse<PlayerRunningResponse>>> PlayerRunning(int nDesX,  int nDesY)
+    {
+        var result = await playerService.Running(nDesX, nDesY);
+        return Ok(BaseResponse<PlayerRunningResponse>.OkResponse(result, "Running Success"));   
     }
 }                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           

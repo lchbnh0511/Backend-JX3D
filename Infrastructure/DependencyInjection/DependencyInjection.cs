@@ -138,7 +138,8 @@ public static class DependencyInjection
         services.AddScoped<ISkillMapper, SkillMapper>();
         services.AddScoped<INpcMapper, NpcMapper>();
         services.AddScoped<ITaskMapper, TaskMapper>();
-        services.AddScoped<IChatMapper, ChatMapper>();  
+        services.AddScoped<IChatMapper, ChatMapper>();
+        services.AddScoped<IPlayerMapper, PlayerMapper>();
     }
     
     private static void AddLoadingResourcesService()

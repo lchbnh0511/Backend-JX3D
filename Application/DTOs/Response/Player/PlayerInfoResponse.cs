@@ -2,6 +2,7 @@ namespace BackendJX3D.Application.DTOs.Response.Player;
 
 public class PlayerInfoResponse
 {
+    public string m_sPlayerName { get; set; }
     public uint m_dwID { get; set; }
     public byte m_btLevel { get; set; }
     public bool m_bSex { get; set; }
