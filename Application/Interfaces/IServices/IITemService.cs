@@ -6,5 +6,5 @@ public interface IITemService
 {
     Task<List<ItemResponse>> GetListItemByPlace(int nPlace, int type = 10);
 
-    Task<ItemUseResponse> UseItem(uint itemId, byte place, byte destPlace, byte x, byte y);
+    Task<ItemUseResponse> UseItem(uint itemId);
 }

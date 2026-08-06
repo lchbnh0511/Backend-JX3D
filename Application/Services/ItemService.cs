@@ -46,29 +46,30 @@ public class ItemService : IITemService
         return await Task.FromResult(items);
     }
 
-    public async Task<ItemUseResponse> UseItem(uint itemId, byte place, byte destPlace, byte x, byte y)
+    public async Task<ItemUseResponse> UseItem(uint itemId)
     {
         var session = _sessionManager.Get(_currentUser.SessionId);
         var state = session.Handler.State;
-
-        session.GameServer.GetSender().SendPlayerUseItemPacket(itemId, place, destPlace, x, y);
-
-        // State.Items do Ons2cSyncItem / Ons2cRemoveItem cập nhật từ recv thread
         var id = (int)itemId;
-        var response = new ItemUseResponse
+
+        var found = state.Items.Get(id);
+
+        if (found == null)
+            throw new BaseException.NotFoundException(
+                "item_not_found",
+                "Không tìm thấy vật phẩm này.");
+
+        var item = found.Value;
+
+        session.GameServer.GetSender().SendPlayerUseItemPacket(itemId, item.m_btPlace, 0, item.m_btX, item.m_btY);
+
+        return await Task.FromResult(new ItemUseResponse
         {
             ItemId = id,
-            Removed = !state.Items.Contains(id),
-        };
-
-        if (!response.Removed)
-        {
-            var item = state.Items.Get(id);
-
-            if (item != null)
-                response.Item = _itemMapper.FromItemRequest(item.Value);
-        }
-
-        return await Task.FromResult(response);
+            Place = item.m_btPlace,
+            X = item.m_btX,
+            Y = item.m_btY,
+            Item = _itemMapper.FromItemRequest(item),
+        });
     }
 }

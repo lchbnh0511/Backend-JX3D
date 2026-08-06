@@ -4,9 +4,10 @@ public class ItemUseResponse
 {
     public int ItemId { get; set; }
 
-    /// <summary>true = dùng hết, item không còn trong túi.</summary>
-    public bool Removed { get; set; }
-
-    /// <summary>Trạng thái mới của item sau khi dùng. Null khi Removed = true.</summary>
+    // Vị trí item lúc gửi lệnh - đúng bộ tham số đã bắn lên GS (destPlace luôn 0 nên không trả)
+    public byte Place { get; set; }
+    public byte X { get; set; }
+    public byte Y { get; set; }
+    
     public ItemResponse? Item { get; set; }
 }

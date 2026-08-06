@@ -34,10 +34,9 @@ public class ItemController : ControllerBase
     }
     
     [HttpPost("use-item")]
-    public async Task<ActionResult<BaseResponse<ItemUseResponse>>> UseItem(
-        uint itemId, byte place, byte destPlace, byte x, byte y)
+    public async Task<ActionResult<BaseResponse<ItemUseResponse>>> UseItem(uint itemId)
     {
-        var result = await itemService.UseItem(itemId, place, destPlace, x, y);
+        var result = await itemService.UseItem(itemId);
         return Ok(BaseResponse<ItemUseResponse>.OkResponse(result, "Dùng vật phẩm thành công."));
     }
 }
