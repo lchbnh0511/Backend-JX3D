@@ -27,7 +27,6 @@ public class NpcService : INpcService
         
         var npcs = session.Handler.State.Npcs
             .GetAll()
-            .Where(x => x.ID != (uint)session.Handler.State.PlayerId)
             .Select(_npcMapper.FromNpcRequest)
             .ToList();
 

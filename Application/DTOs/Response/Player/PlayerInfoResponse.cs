@@ -35,4 +35,9 @@ public class PlayerInfoResponse
     public int m_nMoney2 { get; set; }
     public byte m_btEquipExpand { get; set; }
     public byte m_btExpandBox { get; set; }
+
+    // Toạ độ lấy từ NPC_SYNC của chính mình
+    public uint MapX { get; set; }
+    public uint MapY { get; set; }
+    public int Dir { get; set; }
 }

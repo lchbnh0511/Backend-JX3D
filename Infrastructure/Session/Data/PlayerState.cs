@@ -10,6 +10,8 @@ public class PlayerState
 
     public CURPLAYER_SYNC? CurPlayer { get; set; }
 
+    public NPC_SYNC? PlayerNpc { get; set; }
+
     public WORLD_SYNC? World { get; set; }
 
     public CURPLAYER_NORMAL_SYNC? PlayerStats { get; set; }

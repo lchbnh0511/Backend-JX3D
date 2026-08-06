@@ -32,7 +32,7 @@ public class PlayerService : IPlayerService
         if (state.CurPlayer == null || state.PlayerStats == null)
             return await Task.FromResult<PlayerResponse?>(null);
 
-        var response = _playerMapper.FromPlayerRequest(state.CurPlayer.Value, state.PlayerStats.Value, state.Name!);
+        var response = _playerMapper.FromPlayerRequest(state.CurPlayer.Value, state.PlayerStats.Value, state.Name!, state.PlayerNpc);
 
         return await Task.FromResult<PlayerResponse?>(response);
     }

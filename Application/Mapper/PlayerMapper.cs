@@ -7,19 +7,23 @@ namespace BackendJX3D.Application.Mapper;
 
 public class PlayerMapper : IPlayerMapper
 {
-    public PlayerResponse FromPlayerRequest(CURPLAYER_SYNC curPlayer, CURPLAYER_NORMAL_SYNC playerStats, string name)
+    public PlayerResponse FromPlayerRequest(CURPLAYER_SYNC curPlayer, CURPLAYER_NORMAL_SYNC playerStats, string name, NPC_SYNC? playerNpc)
     {
         return new PlayerResponse
         {
-            PlayerInfo = ToPlayerInfo(curPlayer, name),
+            PlayerInfo = ToPlayerInfo(curPlayer, name, playerNpc),
             Stats = ToStats(playerStats)
         };
     }
 
-    private PlayerInfoResponse ToPlayerInfo(CURPLAYER_SYNC curPlayer, string name)
+    private PlayerInfoResponse ToPlayerInfo(CURPLAYER_SYNC curPlayer, string name, NPC_SYNC? playerNpc)
     {
         return new PlayerInfoResponse
         {
+            MapX = playerNpc?.MapX ?? 0,
+            MapY = playerNpc?.MapY ?? 0,
+            Dir = playerNpc?.Dir ?? 0,
+
             m_sPlayerName = name,
             m_dwID = curPlayer.m_dwID,
             m_btLevel = curPlayer.m_btLevel,
