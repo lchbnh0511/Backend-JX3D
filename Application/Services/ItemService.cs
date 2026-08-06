@@ -1,8 +1,10 @@
 using BackendJX3D.Application.DTOs.Response.Item;
 using BackendJX3D.Application.Interfaces.IMapper;
 using BackendJX3D.Application.Interfaces.IServices;
+using BackendJX3D.Core.Base;
 using BackendJX3D.Infrastructure.Auth;
 using BackendJX3D.Infrastructure.Session;
+using BackendJX3D.Infrastructure.Session.Data;
 
 namespace BackendJX3D.Application.Services;
 
@@ -42,5 +44,31 @@ public class ItemService : IITemService
             .ToList();
 
         return await Task.FromResult(items);
+    }
+
+    public async Task<ItemUseResponse> UseItem(uint itemId, byte place, byte destPlace, byte x, byte y)
+    {
+        var session = _sessionManager.Get(_currentUser.SessionId);
+        var state = session.Handler.State;
+
+        session.GameServer.GetSender().SendPlayerUseItemPacket(itemId, place, destPlace, x, y);
+
+        // State.Items do Ons2cSyncItem / Ons2cRemoveItem cập nhật từ recv thread
+        var id = (int)itemId;
+        var response = new ItemUseResponse
+        {
+            ItemId = id,
+            Removed = !state.Items.Contains(id),
+        };
+
+        if (!response.Removed)
+        {
+            var item = state.Items.Get(id);
+
+            if (item != null)
+                response.Item = _itemMapper.FromItemRequest(item.Value);
+        }
+
+        return await Task.FromResult(response);
     }
 }

@@ -191,21 +191,33 @@ public class GameSession : IEventHandler
         {
             State.PlayerId = data.ID;
             State.Name = data.GetName();
+            State.PlayerNpc = data;
             return;
         }
-        
+
+        // Server sync lại NPC của chính mình -> cập nhật toạ độ, không đẩy vào danh sách NPC
+        if (data.ID == State.PlayerId)
+        {
+            State.PlayerNpc = data;
+            return;
+        }
+
         State.Npcs.AddOrUpdate(data);
     }
 
     public void OnSyncNpcMin(NPC_NORMAL_SYNC data)
     {
+        
+        if (data.ID == State.PlayerId) return;
+
         if (!State.Npcs.Contains(data.ID))
         {
             // Chưa có NPC đầy đủ -> yêu cầu server sync
             var gameServer = _gameServer();
             gameServer.Client.Sender.SendRequestNpcPacket(data.ID);
-            return;
         }
+        
+        
         //
         // var npc = state.Npc;
         //
@@ -425,12 +437,17 @@ public class GameSession : IEventHandler
 
     public void Ons2cSyncItem(ITEM_SYNC data)
     {
+        Log($"[Ons2cRemoveItem] ProtocolType " + data.ProtocolType +
+            " m_btPlace " + data.m_btPlace + " m_Durability " + data.m_Durability + " randomSeed " + data.m_RandomSeed);
+        
         _state.Items.AddOrUpdate(data);
     }
 
     public void Ons2cRemoveItem(ITEM_REMOVE_SYNC data)
     {
-        //Log($"{data}");
+        Log($"[Ons2cRemoveItem] ProtocolType " + data.ProtocolType + " m_ID " + data.m_ID);
+
+        _state.Items.Remove(data.m_ID);
     }
 
     public void Ons2cSyncMoney(PLAYER_MONEY_SYNC data)

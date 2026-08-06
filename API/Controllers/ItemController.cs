@@ -32,4 +32,12 @@ public class ItemController : ControllerBase
         var result = await itemService.GetListItemByPlace(type);
         return Ok(BaseResponse<List<ItemResponse>>.OkResponse(result, "Lấy danh sách vật phẩm đang trang bị thành công."));
     }
+    
+    [HttpPost("use-item")]
+    public async Task<ActionResult<BaseResponse<ItemUseResponse>>> UseItem(
+        uint itemId, byte place, byte destPlace, byte x, byte y)
+    {
+        var result = await itemService.UseItem(itemId, place, destPlace, x, y);
+        return Ok(BaseResponse<ItemUseResponse>.OkResponse(result, "Dùng vật phẩm thành công."));
+    }
 }
