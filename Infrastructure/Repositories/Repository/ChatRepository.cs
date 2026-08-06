@@ -5,42 +5,70 @@ namespace BackendJX3D.Infrastructure.Repositories.Repository;
 
 public class ChatRepository : IChatRepository
 {
+    // Recv thread của GS ghi, request thread của API đọc -> mọi truy cập phải trong lock.
+    private readonly object _gate = new();
+
     private readonly Dictionary<int, List<CHANNEL_PI_MESSAGE_CHAT>> _chats = new();
 
     public void AddOrUpdate(CHANNEL_PI_MESSAGE_CHAT chat)
     {
-        if (!_chats.TryGetValue(chat.ChannelId, out var messages))
+        lock (_gate)
         {
-            messages = new List<CHANNEL_PI_MESSAGE_CHAT>();
-            _chats.Add(chat.ChannelId, messages);
-        }
+            if (!_chats.TryGetValue(chat.ChannelId, out var messages))
+            {
+                messages = new List<CHANNEL_PI_MESSAGE_CHAT>();
+                _chats.Add(chat.ChannelId, messages);
+            }
 
-        messages.Add(chat);
+            messages.Add(chat);
+        }
     }
 
     public bool Remove(int channelId)
     {
-        return _chats.Remove(channelId);
+        lock (_gate)
+        {
+            return _chats.Remove(channelId);
+        }
     }
 
+    // Trả bản sao, không trả List gốc (recv thread Add vào giữa lúc caller duyệt là nổ)
     public IReadOnlyList<CHANNEL_PI_MESSAGE_CHAT>? Get(int channelId)
     {
-        return _chats.TryGetValue(channelId, out var messages)
-            ? messages
-            : null;
+        lock (_gate)
+        {
+            return _chats.TryGetValue(channelId, out var messages)
+                ? messages.ToArray()
+                : null;
+        }
     }
 
     public IReadOnlyCollection<CHANNEL_PI_MESSAGE_CHAT> GetAll()
     {
-        return _chats.Values
-            .SelectMany(messages => messages)
-            .ToList();
+        lock (_gate)
+        {
+            return _chats.Values
+                .SelectMany(messages => messages)
+                .ToArray();
+        }
     }
 
     public bool Contains(int channelId)
     {
-        return _chats.ContainsKey(channelId);
+        lock (_gate)
+        {
+            return _chats.ContainsKey(channelId);
+        }
     }
 
-    public int Count => _chats.Values.Sum(messages => messages.Count);
+    public int Count
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _chats.Values.Sum(messages => messages.Count);
+            }
+        }
+    }
 }
