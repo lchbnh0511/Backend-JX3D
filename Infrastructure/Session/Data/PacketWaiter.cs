@@ -4,43 +4,91 @@ namespace BackendJX3D.Infrastructure.Session.Data;
 
 public sealed class PacketWaiter<T> where T : struct
 {
-    private TaskCompletionSource<T>? _tcs;
-
-    /// <summary>
-    /// Giữ chỗ chờ -> gửi lệnh -> chờ reply. Trả null nếu GS không phản hồi trong timeout.
-    /// Ném ConflictException (409) nếu đang có lệnh cùng loại chưa xong.
-    /// </summary>
-    public async Task<T?> SendAndWaitAsync(Action send, TimeSpan timeout)
+    private sealed class Pending
     {
-        var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+        public readonly TaskCompletionSource<T> Anchor = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        // Chỉ giành được chỗ khi đang trống -> chống client spam command
-        if (Interlocked.CompareExchange(ref _tcs, tcs, null) != null)
-            throw new BaseException.ConflictException(
-                "command_in_progress",
-                "Lệnh trước chưa hoàn tất, thử lại sau.");
+        // Mỗi packet cùng nhóm về sau khi đã neo -> Release() để reset đồng hồ lắng
+        public readonly SemaphoreSlim Pulse = new(0);
+
+        public bool Anchored;
+    }
+
+    private readonly object _gate = new();
+
+    private readonly Dictionary<long, Pending> _pending = new();
+    
+    public async Task<T?> SendAndWaitAsync(long key, Action send, TimeSpan timeout, TimeSpan settle)
+    {
+        var pending = new Pending();
+
+        lock (_gate)
+        {
+            if (_pending.ContainsKey(key))
+                throw new BaseException.ConflictException(
+                    "command_in_progress",
+                    "Lệnh trước trên đối tượng này chưa xong, thử lại sau.");
+
+            _pending[key] = pending;
+        }
 
         try
         {
             // Gửi SAU khi đã giữ chỗ -> reply về sớm cỡ nào cũng không mất
             send();
 
-            return await tcs.Task.WaitAsync(timeout);
-        }
-        catch (TimeoutException)
-        {
-            return null;
+            T anchor;
+
+            try
+            {
+                anchor = await pending.Anchor.Task.WaitAsync(timeout);
+            }
+            catch (TimeoutException)
+            {
+                return null;
+            }
+
+            // Chờ chùm packet lắng xuống trước khi cho caller đọc State
+            if (settle > TimeSpan.Zero)
+            {
+                while (await pending.Pulse.WaitAsync(settle))
+                {
+                }
+            }
+
+            return anchor;
         }
         finally
         {
-            // Nhả chỗ. Nếu thành công thì Complete() đã lấy ra rồi, CompareExchange không làm gì.
-            Interlocked.CompareExchange(ref _tcs, null, tcs);
+            lock (_gate)
+            {
+                if (_pending.TryGetValue(key, out var current) && current == pending)
+                    _pending.Remove(key);
+            }
         }
     }
 
-    /// <summary>Recv thread gọi khi packet về. Không ai chờ thì bỏ qua.</summary>
-    public void Complete(T data)
+    public void Complete(long key, T data)
     {
-        Interlocked.Exchange(ref _tcs, null)?.TrySetResult(data);
+        lock (_gate)
+        {
+            Pending? justAnchored = null;
+
+            if (_pending.TryGetValue(key, out var pending) && !pending.Anchored)
+            {
+                pending.Anchored = true;
+                justAnchored = pending;
+
+                pending.Anchor.TrySetResult(data);
+            }
+
+            // Packet tiếp theo của cùng chùm có thể mang key khác (vd mặc đồ: item cũ ra, item mới vào)
+            // -> reset đồng hồ lắng cho mọi lệnh đã neo.
+            foreach (var other in _pending.Values)
+            {
+                if (other.Anchored && other != justAnchored)
+                    other.Pulse.Release();
+            }
+        }
     }
 }

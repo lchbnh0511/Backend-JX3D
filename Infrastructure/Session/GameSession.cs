@@ -271,8 +271,8 @@ public class GameSession : IEventHandler
     public void OnNetCommandRun(NPC_RUN_SYNC data)
     {
         Log("[OnNetCommandRun] ProtocolType " + data.ProtocolType + " ID " + data.ID + " nMpsX " + data.nMpsX + " nMpsY " + data.nMpsY);
-        if (State.PlayerId != data.ID) return;
-        State.Waiters.Complete(data);
+
+        State.Waiters.Complete(data.ID, data);
     }
 
     public void OnNetCommandJump(NPC_JUMP_SYNC data)
@@ -307,9 +307,7 @@ public class GameSession : IEventHandler
 
     public void OnNetCommandSit(NPC_SIT_SYNC data)
     {
-        if (data.ID != State.PlayerId) return;
-
-        State.Waiters.Complete(data);
+        State.Waiters.Complete(data.ID, data);
     }
 
     public void OnNetCommandSetPos(NPC_PLAYER_TYPE_NORMAL_SYNC data)
@@ -325,9 +323,8 @@ public class GameSession : IEventHandler
     public void OnNetCommandSetHorse(NPC_HORSE_SYNC data)
     {
         Log($"[OnNetCommandSetHorse] m_dwID "  + data.m_dwID + " m_bRideHorse " + data.m_bRideHorse);
-        if (data.m_dwID != State.PlayerId) return;
-        
-        State.Waiters.Complete(data);
+
+        State.Waiters.Complete(data.m_dwID, data);
     }
 
     public void Ons2cNpcSetMenuState(NPC_SET_MENU_STATE_SYNC data)
@@ -441,6 +438,8 @@ public class GameSession : IEventHandler
             " m_btPlace " + data.m_btPlace + " m_Durability " + data.m_Durability + " randomSeed " + data.m_RandomSeed);
         
         _state.Items.AddOrUpdate(data);
+
+        _state.Waiters.Complete(data.m_dwID, new ItemChange { ItemId = data.m_dwID, Removed = false });
     }
 
     public void Ons2cRemoveItem(ITEM_REMOVE_SYNC data)
@@ -448,6 +447,8 @@ public class GameSession : IEventHandler
         Log($"[Ons2cRemoveItem] ProtocolType " + data.ProtocolType + " m_ID " + data.m_ID);
 
         _state.Items.Remove(data.m_ID);
+
+        _state.Waiters.Complete(data.m_ID, new ItemChange { ItemId = data.m_ID, Removed = true });
     }
 
     public void Ons2cSyncMoney(PLAYER_MONEY_SYNC data)

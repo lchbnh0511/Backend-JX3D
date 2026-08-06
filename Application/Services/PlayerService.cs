@@ -43,8 +43,10 @@ public class PlayerService : IPlayerService
         var sender = session.GameServer.GetSender();
         var waiters = session.Handler.State.Waiters;
         
-        var data = await waiters.SendAndWaitAsync<NPC_SIT_SYNC>(() =>
-                sender.SendPlayerSitPacket(true), TimeSpan.FromSeconds(TIME_WAIT_ASYNC));
+        var data = await waiters.SendAndWaitAsync<NPC_SIT_SYNC>(
+            session.Handler.State.PlayerId,
+            () => sender.SendPlayerSitPacket(true),
+            TimeSpan.FromSeconds(TIME_WAIT_ASYNC));
 
         if (data == null)
             throw new BaseException.ErrorException(
@@ -61,8 +63,10 @@ public class PlayerService : IPlayerService
         var sender = session.GameServer.GetSender();
         var waiters = session.Handler.State.Waiters;
         
-        var data = await waiters.SendAndWaitAsync<NPC_HORSE_SYNC>(() => 
-            sender.SendPlayerRidePacket(), TimeSpan.FromSeconds(TIME_WAIT_ASYNC));
+        var data = await waiters.SendAndWaitAsync<NPC_HORSE_SYNC>(
+            session.Handler.State.PlayerId,
+            () => sender.SendPlayerRidePacket(),
+            TimeSpan.FromSeconds(TIME_WAIT_ASYNC));
 
         if (data == null)
             throw new BaseException.ErrorException(
@@ -79,8 +83,10 @@ public class PlayerService : IPlayerService
         var sender = session.GameServer.GetSender();
         var waiters = session.Handler.State.Waiters;
         
-        var data = await waiters.SendAndWaitAsync<NPC_RUN_SYNC>(() => 
-            sender.SendPlayerRunPacket(nDesX, nDesY), TimeSpan.FromSeconds(TIME_WAIT_ASYNC));
+        var data = await waiters.SendAndWaitAsync<NPC_RUN_SYNC>(
+            session.Handler.State.PlayerId,
+            () => sender.SendPlayerRunPacket(nDesX, nDesY),
+            TimeSpan.FromSeconds(TIME_WAIT_ASYNC));
 
         if (data == null)
             throw new BaseException.ErrorException(
