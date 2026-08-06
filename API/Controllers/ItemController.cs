@@ -46,4 +46,11 @@ public class ItemController : ControllerBase
         var result = await itemService.UnEquipItem(itemId);
         return Ok(BaseResponse<ItemUseResponse>.OkResponse(result, "Tháo trang bị thành công."));
     }
+    
+    [HttpPost("throw-away-item")]
+    public async Task<ActionResult<BaseResponse<bool>>> ThrowAwayItem(uint itemId)
+    {
+        var result = await itemService.ThrowAwayItem(itemId);
+        return Ok(BaseResponse<bool>.OkResponse(result, "Vứt Item thành công."));
+    }
 }

@@ -101,4 +101,22 @@ public class ItemService : IITemService
             Item = _itemMapper.FromItemRequest(item),
         };
     }
+
+
+    public async Task<bool> ThrowAwayItem(uint itemId)
+    {
+        var item = FindItem(itemId);
+        
+        //Check do dang mang
+        if (item.m_btPlace == (byte)ITEM_POSITION.pos_equip)
+            throw new BaseException.BadRequestException(
+                "item_already_equipped",
+                "Vật phẩm đang được trang bị, tháo ra trước khi vứt.");
+
+        var session = _sessionManager.Get(_currentUser.SessionId);
+
+        session.GameServer.GetSender().SendPlayerThrowAwayItemPacket(itemId);
+
+        return await Task.FromResult(true);
+    }
 }

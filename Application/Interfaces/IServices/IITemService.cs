@@ -9,4 +9,6 @@ public interface IITemService
     Task<ItemUseResponse> UseItem(uint itemId);
 
     Task<ItemUseResponse> UnEquipItem(uint itemId);
+    
+    Task<bool> ThrowAwayItem(uint itemId);
 }
