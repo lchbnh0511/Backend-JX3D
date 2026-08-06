@@ -5,6 +5,7 @@ using BackendJX3D.Core.Base;
 using BackendJX3D.Infrastructure.Auth;
 using BackendJX3D.Infrastructure.Session;
 using BackendJX3D.Infrastructure.Session.Data;
+using Network.Header;
 
 namespace BackendJX3D.Application.Services;
 
@@ -48,28 +49,56 @@ public class ItemService : IITemService
 
     public async Task<ItemUseResponse> UseItem(uint itemId)
     {
-        var session = _sessionManager.Get(_currentUser.SessionId);
-        var state = session.Handler.State;
-        var id = (int)itemId;
+        var item = FindItem(itemId);
 
-        var found = state.Items.Get(id);
+        if (item.m_btPlace == (byte)ITEM_POSITION.pos_equip)
+            throw new BaseException.BadRequestException(
+                "item_already_equipped",
+                "Vật phẩm đang được trang bị, dùng API tháo trang bị.");
+
+        // destPlace = 0 -> server tự quyết: trang bị thì mặc lên, thuốc thì uống
+        return await Task.FromResult(Send(itemId, item, destPlace: 0));
+    }
+
+    public async Task<ItemUseResponse> UnEquipItem(uint itemId)
+    {
+        var item = FindItem(itemId);
+
+        if (item.m_btPlace != (byte)ITEM_POSITION.pos_equip)
+            throw new BaseException.BadRequestException(
+                "item_not_equipped",
+                "Vật phẩm không nằm trên người nên không tháo được.");
+
+        return await Task.FromResult(Send(itemId, item, destPlace: (byte)ITEM_POSITION.pos_equiproom));
+    }
+
+    private ITEM_SYNC FindItem(uint itemId)
+    {
+        var session = _sessionManager.Get(_currentUser.SessionId);
+        var found = session.Handler.State.Items.Get((int)itemId);
 
         if (found == null)
             throw new BaseException.NotFoundException(
                 "item_not_found",
                 "Không tìm thấy vật phẩm này.");
 
-        var item = found.Value;
+        return found.Value;
+    }
 
-        session.GameServer.GetSender().SendPlayerUseItemPacket(itemId, item.m_btPlace, 0, item.m_btX, item.m_btY);
+    private ItemUseResponse Send(uint itemId, ITEM_SYNC item, byte destPlace)
+    {
+        var session = _sessionManager.Get(_currentUser.SessionId);
 
-        return await Task.FromResult(new ItemUseResponse
+        session.GameServer.GetSender().SendPlayerUseItemPacket(itemId, item.m_btPlace, destPlace, item.m_btX, item.m_btY);
+
+        return new ItemUseResponse
         {
-            ItemId = id,
+            ItemId = (int)itemId,
             Place = item.m_btPlace,
+            DestPlace = destPlace,
             X = item.m_btX,
             Y = item.m_btY,
             Item = _itemMapper.FromItemRequest(item),
-        });
+        };
     }
 }

@@ -7,4 +7,6 @@ public interface IITemService
     Task<List<ItemResponse>> GetListItemByPlace(int nPlace, int type = 10);
 
     Task<ItemUseResponse> UseItem(uint itemId);
+
+    Task<ItemUseResponse> UnEquipItem(uint itemId);
 }

@@ -39,4 +39,11 @@ public class ItemController : ControllerBase
         var result = await itemService.UseItem(itemId);
         return Ok(BaseResponse<ItemUseResponse>.OkResponse(result, "Dùng vật phẩm thành công."));
     }
+    
+    [HttpPost("unequip")]
+    public async Task<ActionResult<BaseResponse<ItemUseResponse>>> UnEquipItem(uint itemId)
+    {
+        var result = await itemService.UnEquipItem(itemId);
+        return Ok(BaseResponse<ItemUseResponse>.OkResponse(result, "Tháo trang bị thành công."));
+    }
 }

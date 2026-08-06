@@ -537,7 +537,7 @@ public class GameSession : IEventHandler
 
     public void Ons2cShowMsg(SHOW_MSG_SYNC data, byte[] buffer)
     {
-        //Log($"{data}");
+        Log("[Ons2cShowMsg] " + buffer.Length);
     }
 
     public void Ons2cDirectlyCastSkill(NPC_SKILL_SYNC data)
