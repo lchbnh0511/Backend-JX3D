@@ -9,4 +9,5 @@ public interface IAccountService
     Task<List<CharacterResponse>> GetCharacters();
     Task<string> LoginServerAccount(LoginServerRequest request);
     Task<string> LogoutServerAccount();
+    Task<string> LogoutBishop();
 }

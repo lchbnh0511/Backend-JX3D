@@ -34,6 +34,14 @@ namespace BackendJX3D.API.Controllers
         }
         
         [Authorize]
+        [HttpPost("logout-bishop")]
+        public async Task<ActionResult<BaseResponse<string>>> LogoutBishop()
+        {
+            await accountService.LogoutBishop();
+            return Ok(BaseResponse<string>.OkResponse("Đăng xuất Bishop thành công."));
+        }
+        
+        [Authorize]
         [HttpPost("login-server")]
         public async Task<ActionResult<BaseResponse<string>>> Login([FromBody] LoginServerRequest request)
         {

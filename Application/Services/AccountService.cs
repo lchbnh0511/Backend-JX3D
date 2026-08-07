@@ -203,5 +203,23 @@ public class AccountService : IAccountService
         
         return await Task.FromResult("Success");
     }
+
+    public async Task<string> LogoutBishop()
+    {
+        var session = _sessionManager.Get(_currentUser.SessionId);
+
+        if (session == null! || session.Bishop == null)
+            throw new BaseException.NotFoundException("not_found", "null");
+        
+        Console.WriteLine("LogOut Bishop");
+        
+        session.Bishop.Client.Close();
+        session.Bishop.Client.Dispose();
+        session.Bishop = null!;
+        _sessionManager.Remove(_currentUser.SessionId);
+        
+        return await Task.FromResult("Success");
+    }
+
     
 }
