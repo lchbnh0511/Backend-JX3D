@@ -2,6 +2,7 @@ using BackendJX3D.Application.DTOs.Response.Skill;
 using BackendJX3D.Application.Interfaces.IServices;
 using BackendJX3D.Core.Base;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Network.Header;
 
@@ -24,5 +25,12 @@ public class SkillController : ControllerBase
     {
         var result = await skillService.GetListSkill();
         return Ok(BaseResponse<List<SkillResponse>>.OkResponse(result, "Lấy danh sách kĩ năng thành công."));
+    }
+
+    [HttpPost("add-point-skill")]
+    public async Task<ActionResult<BaseResponse<SkillPointResponse>>> UpdatePointSkill(int skillId, int points)
+    {
+        var result = await skillService.UpdatePointSkill(skillId, points);
+        return Ok(BaseResponse<SkillPointResponse>.OkResponse(result, $"Cộng {points} điểm kỹ năng {skillId} thành công."));
     }
 }

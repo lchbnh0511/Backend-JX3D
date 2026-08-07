@@ -361,7 +361,15 @@ public class GameSession : IEventHandler
 
     public void Ons2cGetSkillLevel(PLAYER_SKILL_LEVEL_SYNC data)
     {
-        //Log($"{data}");
+        Log($"[Ons2cGetSkillLevel] m_btSkillTemp " + data.m_btSkillTemp +
+            " m_nSkillID " + data.m_nSkillID +
+            " m_nSkillLevel " + data.m_nSkillLevel +
+            " m_nAddLevel " + data.m_nAddLevel +
+            " m_nSkillExp " + data.m_nSkillExp +
+            " m_nNextSkillExp " + data.m_nNextSkillExp +
+            " m_nLeavePoint " + data.m_nLeavePoint);
+        
+        State.Waiters.Complete(data.m_nSkillID, data);
     }
 
     public void Ons2cSetFactionData(PLAYER_FACTION_DATA data)

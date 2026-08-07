@@ -14,7 +14,7 @@ public class PlayerService : IPlayerService
     private readonly ICurrentUser _currentUser;
     private readonly IPlayerMapper _playerMapper;
     
-    private const uint TIME_WAIT_ASYNC = 3;
+    private const double TIME_WAIT_ASYNC = 3;
 
     public PlayerService(ISessionManager sessionManager, ICurrentUser currentUser, IPlayerMapper playerMapper)
     {
@@ -99,7 +99,7 @@ public class PlayerService : IPlayerService
 
     public async Task<PlayerAttributeResponse> UpdateAttributePoint(UI_PLAYER_ATTRIBUTE attribute, int point)
     {
-        if (!Enum.IsDefined((UI_PLAYER_ATTRIBUTE)attribute))
+        if (!Enum.IsDefined(attribute))
             throw new BaseException.BadRequestException("attribute_invalid", "Thuộc tính không hợp lệ.");
 
         if (point <= 0)

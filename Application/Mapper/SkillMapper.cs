@@ -17,4 +17,18 @@ public class SkillMapper : ISkillMapper
             SkillTemp = skill.SkillTemp,
         };
     }
+
+    public SkillPointResponse FromSkillPointRequest(PLAYER_SKILL_LEVEL_SYNC skillLevelSync)
+    {
+        return new SkillPointResponse()
+        {
+            m_btSkillTemp = skillLevelSync.m_btSkillTemp,
+            m_nAddLevel =  skillLevelSync.m_nAddLevel,
+            m_nLeavePoint = skillLevelSync.m_nLeavePoint,
+            m_nNextSkillExp = skillLevelSync.m_nNextSkillExp,
+            m_nSkillExp = skillLevelSync.m_nSkillExp,
+            m_nSkillLevel = skillLevelSync.m_nSkillLevel,
+            m_nSkillID = skillLevelSync.m_nSkillID,
+        };
+    }
 }
