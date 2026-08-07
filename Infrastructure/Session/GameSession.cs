@@ -349,7 +349,14 @@ public class GameSession : IEventHandler
 
     public void Ons2cGetCurAttribute(PLAYER_ATTRIBUTE_SYNC data)
     {
-        //Log($"{data}");
+        Log($"[Ons2cGetCurAttribute] m_btAttribute " + (UI_PLAYER_ATTRIBUTE)data.m_btAttribute +
+            " m_nBasePoint " + data.m_nBasePoint +
+            " m_nCurPoint " + data.m_nCurPoint +
+            " m_nLeavePoint " + data.m_nLeavePoint);
+
+        State.Attribute = data;
+
+        State.Waiters.Complete(data.m_btAttribute, data);
     }
 
     public void Ons2cGetSkillLevel(PLAYER_SKILL_LEVEL_SYNC data)

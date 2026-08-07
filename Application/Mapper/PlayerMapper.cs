@@ -101,4 +101,15 @@ public class PlayerMapper : IPlayerMapper
             nMpsY =  run.nMpsY,
         };
     }
+
+    public PlayerAttributeResponse FromPlayerAttributeRequest(PLAYER_ATTRIBUTE_SYNC attribute)
+    {
+        return new PlayerAttributeResponse
+        {
+            Attribute = (UI_PLAYER_ATTRIBUTE)attribute.m_btAttribute,
+            BasePoint = attribute.m_nBasePoint,
+            CurPoint = attribute.m_nCurPoint,
+            LeavePoint = attribute.m_nLeavePoint,
+        };
+    }
 }

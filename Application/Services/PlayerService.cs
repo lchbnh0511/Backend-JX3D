@@ -96,4 +96,35 @@ public class PlayerService : IPlayerService
 
         return _playerMapper.FromPlayerRunningRequest(data.Value);
     }
+
+    public async Task<PlayerAttributeResponse> UpdateAttributePoint(UI_PLAYER_ATTRIBUTE attribute, int point)
+    {
+        if (!Enum.IsDefined((UI_PLAYER_ATTRIBUTE)attribute))
+            throw new BaseException.BadRequestException("attribute_invalid", "Thuộc tính không hợp lệ.");
+
+        if (point <= 0)
+            throw new BaseException.BadRequestException("point_invalid", "Số điểm cộng phải lớn hơn 0.");
+
+        var session = _sessionManager.Get(_currentUser.SessionId);
+        var state = session.Handler.State;
+        var sender = session.GameServer.GetSender();
+
+        var available = state.CurPlayer?.m_wAttributePoint ?? 0;
+
+        if (point > available)
+            throw new BaseException.BadRequestException("not_enough_attribute_point", $"Không đủ điểm tiềm năng, còn {available} điểm.");
+
+        var data = await state.Waiters.SendAndWaitAsync<PLAYER_ATTRIBUTE_SYNC>(
+            (byte)attribute,
+            () => sender.SendApplyAddBaseAttributePacket((int)attribute, point),
+            TimeSpan.FromSeconds(TIME_WAIT_ASYNC));
+
+        if (data == null)
+            throw new BaseException.ErrorException(
+                504,
+                "Gameserver_timeout",
+                "Game server không phản hồi lệnh cộng điểm tiềm năng, có thể lệnh bị từ chối.");
+
+        return _playerMapper.FromPlayerAttributeRequest(data.Value);
+    }
 }
