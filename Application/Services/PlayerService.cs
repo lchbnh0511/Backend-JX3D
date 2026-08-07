@@ -2,6 +2,7 @@ using BackendJX3D.Application.DTOs.Response.Player;
 using BackendJX3D.Application.Interfaces.IMapper;
 using BackendJX3D.Application.Interfaces.IServices;
 using BackendJX3D.Core.Base;
+using BackendJX3D.Core.Store;
 using BackendJX3D.Infrastructure.Auth;
 using BackendJX3D.Infrastructure.Session;
 using Network.Header;
@@ -14,7 +15,6 @@ public class PlayerService : IPlayerService
     private readonly ICurrentUser _currentUser;
     private readonly IPlayerMapper _playerMapper;
     
-    private const double TIME_WAIT_ASYNC = 3;
 
     public PlayerService(ISessionManager sessionManager, ICurrentUser currentUser, IPlayerMapper playerMapper)
     {
@@ -46,7 +46,7 @@ public class PlayerService : IPlayerService
         var data = await waiters.SendAndWaitAsync<NPC_SIT_SYNC>(
             session.Handler.State.PlayerId,
             () => sender.SendPlayerSitPacket(true),
-            TimeSpan.FromSeconds(TIME_WAIT_ASYNC));
+            GameCommand.Timeout);
 
         if (data == null)
             throw new BaseException.ErrorException(
@@ -66,7 +66,7 @@ public class PlayerService : IPlayerService
         var data = await waiters.SendAndWaitAsync<NPC_HORSE_SYNC>(
             session.Handler.State.PlayerId,
             () => sender.SendPlayerRidePacket(),
-            TimeSpan.FromSeconds(TIME_WAIT_ASYNC));
+            GameCommand.Timeout);
 
         if (data == null)
             throw new BaseException.ErrorException(
@@ -86,7 +86,7 @@ public class PlayerService : IPlayerService
         var data = await waiters.SendAndWaitAsync<NPC_RUN_SYNC>(
             session.Handler.State.PlayerId,
             () => sender.SendPlayerRunPacket(nDesX, nDesY),
-            TimeSpan.FromSeconds(TIME_WAIT_ASYNC));
+            GameCommand.Timeout);
 
         if (data == null)
             throw new BaseException.ErrorException(
@@ -117,7 +117,7 @@ public class PlayerService : IPlayerService
         var data = await state.Waiters.SendAndWaitAsync<PLAYER_ATTRIBUTE_SYNC>(
             (byte)attribute,
             () => sender.SendApplyAddBaseAttributePacket((int)attribute, point),
-            TimeSpan.FromSeconds(TIME_WAIT_ASYNC));
+            GameCommand.Timeout);
 
         if (data == null)
             throw new BaseException.ErrorException(

@@ -2,9 +2,7 @@ using BackendJX3D.Application.DTOs.Response.Skill;
 using BackendJX3D.Application.Interfaces.IServices;
 using BackendJX3D.Core.Base;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
-using Network.Header;
 
 namespace BackendJX3D.API.Controllers;
 

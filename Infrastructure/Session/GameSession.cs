@@ -339,7 +339,7 @@ public class GameSession : IEventHandler
 
     public void Ons2cPlayerExp(PLAYER_EXP_SYNC data)
     {
-        //Log($"{data}");
+        Log("[Ons2cPlayerExp] m_nExp " + data.m_nExp);
     }
 
     public void Ons2cLevelUp(PLAYER_LEVEL_UP_SYNC data)
@@ -356,6 +356,13 @@ public class GameSession : IEventHandler
 
         State.Attribute = data;
 
+        // GS chưa chắc gửi lại CURPLAYER_SYNC -> tự trừ điểm tồn để lần gọi kế tiếp kiểm đúng
+        if (State.CurPlayer is { } curAttr && data.m_nLeavePoint >= 0)
+        {
+            curAttr.m_wAttributePoint = (ushort)data.m_nLeavePoint;
+            State.CurPlayer = curAttr;
+        }
+
         State.Waiters.Complete(data.m_btAttribute, data);
     }
 
@@ -369,6 +376,31 @@ public class GameSession : IEventHandler
             " m_nNextSkillExp " + data.m_nNextSkillExp +
             " m_nLeavePoint " + data.m_nLeavePoint);
         
+        var old = State.Skills.Get((ushort)data.m_nSkillID);
+
+        if (old != null)
+        {
+            var skill = old.Value;
+
+            skill.SkillLevel = (byte)data.m_nSkillLevel;
+            skill.SkillExp = data.m_nSkillExp;
+            skill.NextSkillExp = data.m_nNextSkillExp;
+            skill.SkillTemp = data.m_btSkillTemp;
+
+            State.Skills.AddOrUpdate(skill);
+        }
+        else
+        {
+            Log($"[Ons2cGetSkillLevel] skill {data.m_nSkillID} chưa có trong kho, bỏ qua cập nhật");
+        }
+
+        // GS chưa chắc gửi lại CURPLAYER_SYNC -> tự trừ điểm tồn để lần gọi kế tiếp kiểm đúng
+        if (State.CurPlayer is { } curSkill && data.m_nLeavePoint >= 0)
+        {
+            curSkill.m_wSkillPoint = (ushort)data.m_nLeavePoint;
+            State.CurPlayer = curSkill;
+        }
+
         State.Waiters.Complete(data.m_nSkillID, data);
     }
 

@@ -2,6 +2,7 @@ using BackendJX3D.Application.DTOs.Response.Item;
 using BackendJX3D.Application.Interfaces.IMapper;
 using BackendJX3D.Application.Interfaces.IServices;
 using BackendJX3D.Core.Base;
+using BackendJX3D.Core.Store;
 using BackendJX3D.Infrastructure.Auth;
 using BackendJX3D.Infrastructure.Session;
 using BackendJX3D.Infrastructure.Session.Data;
@@ -16,8 +17,6 @@ public class ItemService : IITemService
     private readonly IItemMapper _itemMapper;
     
     
-    private const double TIME_WAIT_ASYNC = 2;
-    private static readonly TimeSpan ItemSettle = TimeSpan.FromMilliseconds(200);
 
     public ItemService(ISessionManager sessionManager,  ICurrentUser currentUser,  IItemMapper itemMapper)
     {
@@ -86,8 +85,8 @@ public class ItemService : IITemService
             itemId,
             () => session.GameServer.GetSender()
                 .SendPlayerUseItemPacket(itemId, item.m_btPlace, destPlace, item.m_btX, item.m_btY),
-            TimeSpan.FromSeconds(TIME_WAIT_ASYNC),
-            ItemSettle);
+            GameCommand.Timeout,
+            GameCommand.ItemSettle);
 
         if (change == null)
             throw new BaseException.ErrorException(504, "Gameserver_timeout", timeoutMessage + " Có thể lệnh bị từ chối.");
@@ -131,8 +130,8 @@ public class ItemService : IITemService
         var change = await session.Handler.State.Waiters.SendAndWaitAsync<ItemChange>(
             itemId,
             () => session.GameServer.GetSender().SendPlayerThrowAwayItemPacket(itemId),
-            TimeSpan.FromSeconds(TIME_WAIT_ASYNC),
-            ItemSettle);
+            GameCommand.Timeout,
+            GameCommand.ItemSettle);
 
         if (change == null)
             throw new BaseException.ErrorException(
