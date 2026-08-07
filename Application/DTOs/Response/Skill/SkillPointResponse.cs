@@ -2,11 +2,13 @@ namespace BackendJX3D.Application.DTOs.Response.Skill;
 
 public class SkillPointResponse
 {
-    public byte m_btSkillTemp { get; set; }
-    public int m_nSkillID { get; set; }
-    public int m_nSkillLevel  { get; set; }
-    public int m_nAddLevel { get; set; }
-    public int m_nSkillExp  { get; set; }
-    public int m_nNextSkillExp  { get; set; }
-    public int m_nLeavePoint   { get; set; }
+    public int SkillId { get; set; }
+    public int SkillLevel { get; set; }
+    public int AddLevel { get; set; }
+    public int SkillExp { get; set; }
+    public int NextSkillExp { get; set; }
+    public byte SkillTemp { get; set; }
+
+    /// <summary>Điểm kỹ năng còn lại sau khi cộng.</summary>
+    public int LeavePoint { get; set; }
 }

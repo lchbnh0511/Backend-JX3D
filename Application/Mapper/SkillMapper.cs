@@ -20,15 +20,15 @@ public class SkillMapper : ISkillMapper
 
     public SkillPointResponse FromSkillPointRequest(PLAYER_SKILL_LEVEL_SYNC skillLevelSync)
     {
-        return new SkillPointResponse()
+        return new SkillPointResponse
         {
-            m_btSkillTemp = skillLevelSync.m_btSkillTemp,
-            m_nAddLevel =  skillLevelSync.m_nAddLevel,
-            m_nLeavePoint = skillLevelSync.m_nLeavePoint,
-            m_nNextSkillExp = skillLevelSync.m_nNextSkillExp,
-            m_nSkillExp = skillLevelSync.m_nSkillExp,
-            m_nSkillLevel = skillLevelSync.m_nSkillLevel,
-            m_nSkillID = skillLevelSync.m_nSkillID,
+            SkillId = skillLevelSync.m_nSkillID,
+            SkillLevel = skillLevelSync.m_nSkillLevel,
+            AddLevel = skillLevelSync.m_nAddLevel,
+            SkillExp = skillLevelSync.m_nSkillExp,
+            NextSkillExp = skillLevelSync.m_nNextSkillExp,
+            SkillTemp = skillLevelSync.m_btSkillTemp,
+            LeavePoint = skillLevelSync.m_nLeavePoint,
         };
     }
 }
