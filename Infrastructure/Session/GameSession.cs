@@ -192,13 +192,19 @@ public class GameSession : IEventHandler
 
     public void OnSyncPlayerMin(PLAYER_NORMAL_SYNC data)
     {
-        // GS gửi liên tục -> đây là nguồn cập nhật trạng thái tổ đội của người xung quanh
+        var old = State.PlayerInfos.Get(data.ID);
+
+        //lay ten bang cu đỡ tốn 56byte/1 lần
+        var tongName = old != null && old.Value.TongNameId == data.dwTongNameID
+            ? old.Value.TongName
+            : data.GetTongName();
+
         State.PlayerInfos.AddOrUpdate(new PlayerSyncInfo
         {
             Id = data.ID,
             TeamFactionInfo = data.TeamFactionInfo,
             TongNameId = data.dwTongNameID,
-            TongName = data.GetTongName(),
+            TongName = tongName,
             PkFlag = data.PKFlag,
             PkValue = data.PKValue,
             Translife = data.Translife,
