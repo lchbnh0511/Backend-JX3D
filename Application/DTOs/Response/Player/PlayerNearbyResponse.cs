@@ -10,4 +10,11 @@ public class PlayerNearbyResponse
     public int CurrentLifeMax { get; set; }
     public uint MapX { get; set; }
     public uint MapY { get; set; }
+    
+    public bool HasTeam { get; set; }
+
+    public int TeamFactionInfo { get; set; }
+
+    public string TongName { get; set; } = string.Empty;
+    public byte PkFlag { get; set; }
 }

@@ -5,6 +5,7 @@ using BackendJX3D.Core.Base;
 using BackendJX3D.Core.Store;
 using BackendJX3D.Infrastructure.Auth;
 using BackendJX3D.Infrastructure.Session;
+using BackendJX3D.Infrastructure.Session.Data;
 using Network.Header;
 
 namespace BackendJX3D.Application.Services;
@@ -133,10 +134,13 @@ public class PlayerService : IPlayerService
     {
         var session = _sessionManager.Get(_currentUser.SessionId);
 
-        var players = session.Handler.State.Npcs
+        var state = session.Handler.State;
+
+        // Ghép 2 kho theo ID: Npcs cho vị trí/máu/tên, PlayerInfos cho tổ đội/bang hội
+        var players = state.Npcs
             .GetAll()
             .Where(x => x.m_btKind == (byte)NPCKIND.kind_player)
-            .Select(_playerMapper.FromPlayerNearbyRequest)
+            .Select(npc => _playerMapper.FromPlayerNearbyRequest(npc, state.PlayerInfos.Get(npc.ID)))
             .ToList();
 
         return await Task.FromResult(players);

@@ -1,6 +1,7 @@
 using System.Diagnostics.Contracts;
 using BackendJX3D.Application.DTOs.Response.Player;
 using BackendJX3D.Application.Interfaces.IMapper;
+using BackendJX3D.Infrastructure.Session.Data;
 using Network.Header;
 
 namespace BackendJX3D.Application.Mapper;
@@ -113,10 +114,16 @@ public class PlayerMapper : IPlayerMapper
         };
     }
 
-    public PlayerNearbyResponse FromPlayerNearbyRequest(NPC_SYNC npc)
+    public PlayerNearbyResponse FromPlayerNearbyRequest(NPC_SYNC npc, PlayerSyncInfo? info)
     {
         return new PlayerNearbyResponse
         {
+            // Chưa có gói PLAYER_SYNC nào cho người này -> coi như chưa có đội
+            HasTeam = info?.HasTeam ?? false,
+            TeamFactionInfo = info?.TeamFactionInfo ?? -1,
+            TongName = info?.TongName ?? string.Empty,
+            PkFlag = info?.PkFlag ?? 0,
+
             Id = npc.ID,
             Name = npc.GetName(),
             Series = npc.m_bySeries,
