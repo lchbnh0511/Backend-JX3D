@@ -207,30 +207,68 @@ public class GameSession : IEventHandler
 
     public void OnSyncNpcMin(NPC_NORMAL_SYNC data)
     {
-        
         if (data.ID == State.PlayerId) return;
 
-        if (!State.Npcs.Contains(data.ID))
+        var found = State.Npcs.Get(data.ID);
+
+        if (found == null)
         {
-            // Chưa có NPC đầy đủ -> yêu cầu server sync
+            // Chưa có NPC đầy đủ -> yêu cầu server sync.
+            // Gói này thiếu tên/loại/hệ nên không dựng mới được, phải chờ NPC_SYNC.
             var gameServer = _gameServer();
             gameServer.Client.Sender.SendRequestNpcPacket(data.ID);
+            return;
         }
-        
-        
-        //
-        // var npc = state.Npc;
-        //
-        // // Đã có thì chỉ update những field thay đổi
-        // npc.m_CurrentLife = data.CurrentLife;
-        // npc.m_CurrentWalkSpeed = data.WalkSpeed;
-        // npc.m_CurrentRunSpeed = data.RunSpeed; 
-        // npc.m_CurrentCastSpeed = data.CastSpeed;
+
+        // Đã có thì vá những field thay đổi liên tục, giữ nguyên phần chỉ NPC_SYNC mới có
+        var npc = found.Value;
+
+        npc.MapX = (uint)data.MapX;
+        npc.MapY = (uint)data.MapY;
+        npc.CurrentLife = data.CurrentLife;
+        npc.CurrentLifeMax = data.CurrentLifeMax;
+        npc.CurrentCamp = data.CurrentCamp;
+        npc.MissionCamp = data.MissionCamp;
+        npc.State = data.State;
+        npc.m_CmdKind = data.m_CmdKind;
+        npc.m_Param_X = data.m_Param_X;
+        npc.m_Param_Y = data.m_Param_Y;
+        npc.m_Param_Z = data.m_Param_Z;
+        npc.WalkSpeed = data.WalkSpeed;
+        npc.RunSpeed = data.RunSpeed;
+        npc.AttackSpeed = data.AttackSpeed;
+        npc.CastSpeed = data.CastSpeed;
+        npc.m_dwStatus = data.m_dwStatus;
+
+        State.Npcs.AddOrUpdate(npc);
     }
 
     public void OnSyncNpcMinPlayer(NPC_PLAYER_TYPE_NORMAL_SYNC data)
     {
-        //Log($"{data}");
+        if (data.m_dwNpcID == State.PlayerId)
+        {
+            if (State.PlayerNpc is { } self)
+            {
+                self.MapX = data.m_dwMapX;
+                self.MapY = data.m_dwMapY;
+                State.PlayerNpc = self;
+            }
+
+            return;
+        }
+
+        // Gói toạ độ riêng cho NPC loại người chơi -> vá vị trí cho danh sách xung quanh
+        var found = State.Npcs.Get(data.m_dwNpcID);
+
+        if (found == null)
+            return;
+
+        var npc = found.Value;
+
+        npc.MapX = data.m_dwMapX;
+        npc.MapY = data.m_dwMapY;
+
+        State.Npcs.AddOrUpdate(npc);
     }
 
     public void OnSyncObjectAdd(OBJ_ADD_SYNC data)
@@ -260,7 +298,8 @@ public class GameSession : IEventHandler
 
     public void OnNetCommandRemoveNpc(NPC_REMOVE_SYNC data)
     {
-        //Log($"{data}");
+        //Update kho
+        State.Npcs.Remove(data.ID);
     }
 
     public void OnNetCommandWalk(NPC_WALK_SYNC data)

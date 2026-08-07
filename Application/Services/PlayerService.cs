@@ -127,4 +127,18 @@ public class PlayerService : IPlayerService
 
         return _playerMapper.FromPlayerAttributeRequest(data.Value);
     }
+
+
+    public async Task<List<PlayerNearbyResponse>> GetNearbyPlayers()
+    {
+        var session = _sessionManager.Get(_currentUser.SessionId);
+
+        var players = session.Handler.State.Npcs
+            .GetAll()
+            .Where(x => x.m_btKind == (byte)NPCKIND.kind_player)
+            .Select(_playerMapper.FromPlayerNearbyRequest)
+            .ToList();
+
+        return await Task.FromResult(players);
+    }
 }

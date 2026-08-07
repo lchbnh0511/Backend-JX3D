@@ -53,4 +53,11 @@ public class PlayerController : ControllerBase
         var result = await playerService.UpdateAttributePoint(attribute, point);
         return Ok(BaseResponse<PlayerAttributeResponse>.OkResponse(result, "Cộng điểm tiềm năng thành công."));
     }
+
+    [HttpGet("nearby")]
+    public async Task<ActionResult<BaseResponse<List<PlayerNearbyResponse>>>> GetNearbyPlayers()
+    {
+        var result = await playerService.GetNearbyPlayers();
+        return Ok(BaseResponse<List<PlayerNearbyResponse>>.OkResponse(result, "Lấy danh sách người chơi xung quanh thành công."));
+    }
 }

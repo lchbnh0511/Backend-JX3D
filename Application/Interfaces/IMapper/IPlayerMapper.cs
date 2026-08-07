@@ -10,4 +10,5 @@ public interface IPlayerMapper
     PlayerRideResponse FromPlayerRideRequest(NPC_HORSE_SYNC horse);
     PlayerRunningResponse FromPlayerRunningRequest(NPC_RUN_SYNC run);
     PlayerAttributeResponse FromPlayerAttributeRequest(PLAYER_ATTRIBUTE_SYNC attribute);
+    PlayerNearbyResponse FromPlayerNearbyRequest(NPC_SYNC npc);
 }

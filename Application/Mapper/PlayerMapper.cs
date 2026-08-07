@@ -112,4 +112,19 @@ public class PlayerMapper : IPlayerMapper
             LeavePoint = attribute.m_nLeavePoint,
         };
     }
+
+    public PlayerNearbyResponse FromPlayerNearbyRequest(NPC_SYNC npc)
+    {
+        return new PlayerNearbyResponse
+        {
+            Id = npc.ID,
+            Name = npc.GetName(),
+            Series = npc.m_bySeries,
+            Camp = npc.Camp,
+            CurrentLife = npc.CurrentLife,
+            CurrentLifeMax = npc.CurrentLifeMax,
+            MapX = npc.MapX,
+            MapY = npc.MapY,
+        };
+    }
 }

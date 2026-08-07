@@ -11,4 +11,5 @@ public interface IPlayerService
     Task<PlayerRideResponse> RideHorse();
     Task<PlayerRunningResponse> Running(int nDesX,  int nDesY);
     Task<PlayerAttributeResponse> UpdateAttributePoint(UI_PLAYER_ATTRIBUTE attribute, int point);
+    Task<List<PlayerNearbyResponse>> GetNearbyPlayers();
 }
