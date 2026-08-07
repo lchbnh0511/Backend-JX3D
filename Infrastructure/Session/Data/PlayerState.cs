@@ -21,6 +21,9 @@ public class PlayerState
     public IItemRepository Items { get; } = new ItemRepository();
     public ISkillRepository Skills { get; } = new SkillRepository();
     public INpcRepository Npcs { get; } = new NpcRepository();
+
+    /// <summary>Thông tin riêng của người chơi (tổ đội, bang hội, PK), khoá theo cùng ID với Npcs.</summary>
+    public IPlayerInfoRepository PlayerInfos { get; } = new PlayerInfoRepository();
     public ITaskRepository Tasks { get; } = new TaskRepository();
     public IChatRepository Chats { get; } = new ChatRepository();
 }

@@ -177,12 +177,33 @@ public class GameSession : IEventHandler
 
     public void OnSyncPlayer(PLAYER_SYNC data)
     {
-         Log($"[OnSyncPlayer] {data.ID} ");
+        State.PlayerInfos.AddOrUpdate(new PlayerSyncInfo
+        {
+            Id = data.ID,
+            TeamFactionInfo = data.TeamFactionInfo,
+            TongNameId = data.dwTongNameID,
+            TongName = data.GetTongName(),
+            PkFlag = data.PKFlag,
+            PkValue = data.PKValue,
+            Translife = data.Translife,
+            TitleId = data.TitleID,
+        });
     }
 
     public void OnSyncPlayerMin(PLAYER_NORMAL_SYNC data)
     {
-        //Log($"{data}");
+        // GS gửi liên tục -> đây là nguồn cập nhật trạng thái tổ đội của người xung quanh
+        State.PlayerInfos.AddOrUpdate(new PlayerSyncInfo
+        {
+            Id = data.ID,
+            TeamFactionInfo = data.TeamFactionInfo,
+            TongNameId = data.dwTongNameID,
+            TongName = data.GetTongName(),
+            PkFlag = data.PKFlag,
+            PkValue = data.PKValue,
+            Translife = data.Translife,
+            TitleId = data.TitleID,
+        });
     }
 
     public void OnSyncNpc(NPC_SYNC data)
@@ -300,6 +321,7 @@ public class GameSession : IEventHandler
     {
         //Update kho
         State.Npcs.Remove(data.ID);
+        State.PlayerInfos.Remove(data.ID);
     }
 
     public void OnNetCommandWalk(NPC_WALK_SYNC data)
