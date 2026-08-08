@@ -1,18 +1,19 @@
-using Network.Header;
+using BackendJX3D.Infrastructure.Session.Data;
 
 namespace BackendJX3D.Infrastructure.Repositories.IRepository;
 
 public interface IChatRepository
 {
-    void AddOrUpdate(CHANNEL_PI_MESSAGE_CHAT chat);
+    //Số tin tối đa giữ lại cho MỖI kênh
+    int CapacityPerChannel { get; }
 
-    bool Remove(int channelId);
+    void Add(ChatMessage chat);
 
-    IReadOnlyList<CHANNEL_PI_MESSAGE_CHAT>? Get(int channelId);
+    //N tin gần nhất của mọi kênh, trộn theo đúng thứ tự thời gian. Cũ -> mới.
+    IReadOnlyList<ChatMessage> GetRecent(int count);
 
-    IReadOnlyCollection<CHANNEL_PI_MESSAGE_CHAT> GetAll();
-
-    bool Contains(int channelId);
+    //N tin gần nhất của một channelId GS cấp. -1 = tin hệ thống. Cũ -> mới.
+    IReadOnlyList<ChatMessage> GetRecentByChannelId(int count, int channelId);
 
     int Count { get; }
 }

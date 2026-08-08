@@ -1,6 +1,7 @@
 using BackendJX3D.Infrastructure.Session.Data;
 using BackendJX3D.Domain.Entities;
 using BackendJX3D.Core.Base;
+using BackendJX3D.Core.Store;
 using Network.Header;
 using Network.Bishop;
 using System.Net;
@@ -12,6 +13,12 @@ namespace BackendJX3D.Infrastructure.Session;
 public class GameSession : IEventHandler
 {
     private BishopSession _bishop;
+
+    // GS cấp id kênh chat lúc mình đăng ký, và ĐỔI mỗi lần GS khởi động lại -> đăng ký lại
+    // cho mỗi kết nối. Giữ mốc thời gian thay vì cờ một-lần để còn hỏi lại được.
+    private const uint ChatQueryRetryMs = 10_000;
+
+    private uint _chatQueryAt;
     private Func<GameServerSession> _gameServer;
     private readonly PlayerState _state = new(); 
     public PlayerState State => _state;
@@ -173,6 +180,25 @@ public class GameSession : IEventHandler
     public void OnSyncWorld(WORLD_SYNC data)
     {
         State.World = data;
+
+        QueryChatChannels();
+    }
+
+    private void QueryChatChannels()
+    {
+        var now = (uint)Environment.TickCount;
+
+        if (_chatQueryAt != 0 && now - _chatQueryAt < ChatQueryRetryMs)
+            return;
+
+        _chatQueryAt = now;
+
+        var chatSend = _gameServer().Client.chatSend;
+
+        foreach (var name in ChatChannel.AllNames)
+            chatSend.SendQueryChannelByName(name);
+
+        Log("[Chat] Đã đăng ký " + ChatChannel.AllNames.Length + " key name kênh chat");
     }
 
     public void OnSyncPlayer(PLAYER_SYNC data)
@@ -703,7 +729,8 @@ public class GameSession : IEventHandler
 
     public void Ons2cQueryChannel()
     {
-        Log($"");
+        // GS chủ động yêu cầu -> đăng ký luôn
+        QueryChatChannels();
     }
 
     public void Ons2cSetRunAttackTag(S2C_SETRUNATTACKTAG data)
@@ -814,7 +841,17 @@ public class GameSession : IEventHandler
 
     public void OnHandlePIChannelChat(CHANNEL_PI_MESSAGE_CHAT data)
     {
-        State.Chats.AddOrUpdate(data);
+        Log($"[Chat] nhận ChannelId={data.ChannelId} sender='{data.Sender}' msg='{data.Message}'");
+
+        State.Chats.Add(new ChatMessage
+        {
+            ChannelId = data.ChannelId,
+            Sender = data.Sender,
+            Message = data.Message,
+        });
+
+        if (data.ChannelId >= 0 && !ChatChannelRegistry.Instance.TryGetById((uint)data.ChannelId, out _))
+            QueryChatChannels();
     }
 
     public void Ons2cExtendFriend(byte[] data)

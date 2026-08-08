@@ -1,5 +1,5 @@
 using BackendJX3D.Infrastructure.Repositories.IRepository;
-using Network.Header;
+using BackendJX3D.Infrastructure.Session.Data;
 
 namespace BackendJX3D.Infrastructure.Repositories.Repository;
 
@@ -8,56 +8,58 @@ public class ChatRepository : IChatRepository
     // Recv thread của GS ghi, request thread của API đọc -> mọi truy cập phải trong lock.
     private readonly object _gate = new();
 
-    private readonly Dictionary<int, List<CHANNEL_PI_MESSAGE_CHAT>> _chats = new();
+    // Mỗi kênh một hàng đợi riêng, trần riêng
+    private readonly Dictionary<int, Queue<ChatMessage>> _byChannel = new();
 
-    public void AddOrUpdate(CHANNEL_PI_MESSAGE_CHAT chat)
+    // Số thứ tự toàn cục -> trộn các hàng đợi lại vẫn đúng thứ tự thời gian
+    private long _seq;
+
+    public int CapacityPerChannel => 50;
+
+    public void Add(ChatMessage chat)
     {
         lock (_gate)
         {
-            if (!_chats.TryGetValue(chat.ChannelId, out var messages))
+            chat.Seq = ++_seq;
+
+            if (!_byChannel.TryGetValue(chat.ChannelId, out var queue))
             {
-                messages = new List<CHANNEL_PI_MESSAGE_CHAT>();
-                _chats.Add(chat.ChannelId, messages);
+                queue = new Queue<ChatMessage>();
+                _byChannel.Add(chat.ChannelId, queue);
             }
 
-            messages.Add(chat);
+            queue.Enqueue(chat);
+
+            while (queue.Count > CapacityPerChannel)
+                queue.Dequeue();
         }
     }
 
-    public bool Remove(int channelId)
+    public IReadOnlyList<ChatMessage> GetRecent(int count)
     {
-        lock (_gate)
-        {
-            return _chats.Remove(channelId);
-        }
-    }
+        if (count <= 0)
+            return Array.Empty<ChatMessage>();
 
-    // Trả bản sao, không trả List gốc (recv thread Add vào giữa lúc caller duyệt là nổ)
-    public IReadOnlyList<CHANNEL_PI_MESSAGE_CHAT>? Get(int channelId)
-    {
         lock (_gate)
         {
-            return _chats.TryGetValue(channelId, out var messages)
-                ? messages.ToArray()
-                : null;
-        }
-    }
-
-    public IReadOnlyCollection<CHANNEL_PI_MESSAGE_CHAT> GetAll()
-    {
-        lock (_gate)
-        {
-            return _chats.Values
-                .SelectMany(messages => messages)
+            return _byChannel.Values
+                .SelectMany(q => q)
+                .OrderBy(x => x.Seq)
+                .TakeLast(count)
                 .ToArray();
         }
     }
 
-    public bool Contains(int channelId)
+    public IReadOnlyList<ChatMessage> GetRecentByChannelId(int count, int channelId)
     {
+        if (count <= 0)
+            return Array.Empty<ChatMessage>();
+
         lock (_gate)
         {
-            return _chats.ContainsKey(channelId);
+            return _byChannel.TryGetValue(channelId, out var queue)
+                ? queue.TakeLast(count).ToArray()
+                : Array.Empty<ChatMessage>();
         }
     }
 
@@ -67,7 +69,7 @@ public class ChatRepository : IChatRepository
         {
             lock (_gate)
             {
-                return _chats.Values.Sum(messages => messages.Count);
+                return _byChannel.Values.Sum(q => q.Count);
             }
         }
     }
