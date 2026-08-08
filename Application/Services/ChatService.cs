@@ -70,6 +70,17 @@ public class ChatService : IChatService
         if (string.IsNullOrWhiteSpace(message))
             throw new BaseException.BadRequestException("message_empty", "Nội dung chat rỗng.");
 
+        var session = _sessionManager.Get(_currentUser.SessionId);
+        var chatSend = session.GameServer.Client.chatSend;
+
+        // Chat riêng đi đường khác hẳn: "/tên nội dung" -> SendSomeoneMessage.
+        if (TryParseWhisperInput(message, out var target, out var whisper))
+        {
+            chatSend.SendSomeoneMessage(target, whisper);
+
+            return await Task.FromResult(true);
+        }
+
         if (channelId < 0)
             throw new BaseException.BadRequestException("channel_invalid", "channelId không hợp lệ.");
 
@@ -79,10 +90,27 @@ public class ChatService : IChatService
                 "channel_not_registered",
                 $"channelId {channelId} chưa được GS cấp, gọi /chat/channels để lấy id hợp lệ.");
 
-        var session = _sessionManager.Get(_currentUser.SessionId);
-
-        session.GameServer.Client.chatSend.SendChannelMessageText(info.ChannelId, info.Cost, message);
+        chatSend.SendChannelMessageText(info.ChannelId, info.Cost, message);
 
         return await Task.FromResult(true);
+    }
+
+    private static bool TryParseWhisperInput(string text, out string target, out string message)
+    {
+        target = string.Empty;
+        message = string.Empty;
+
+        if (string.IsNullOrEmpty(text) || !text.StartsWith('/'))
+            return false;
+
+        var spaceIdx = text.IndexOf(' ');
+
+        if (spaceIdx < 0)
+            return false;
+
+        target = text[1..spaceIdx].Trim();
+        message = text[(spaceIdx + 1)..].Trim();
+
+        return target.Length > 0 && message.Length > 0;
     }
 }
