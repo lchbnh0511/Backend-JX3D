@@ -13,12 +13,15 @@ namespace BackendJX3D.Infrastructure.Session;
 public class GameSession : IEventHandler
 {
     private BishopSession _bishop;
+    
+    private bool _fixedChannelsQueried;
+    private int _queriedTeamId = int.MinValue;
+    private int _queriedFactionId = int.MinValue;
+    private int _queriedTongId = int.MinValue;
 
-    // GS cấp id kênh chat lúc mình đăng ký, và ĐỔI mỗi lần GS khởi động lại -> đăng ký lại
-    // cho mỗi kết nối. Giữ mốc thời gian thay vì cờ một-lần để còn hỏi lại được.
-    private const uint ChatQueryRetryMs = 10_000;
+    private const uint NpcRequestRetryMs = 5_000;
 
-    private uint _chatQueryAt;
+    private readonly Dictionary<uint, uint> _npcRequestedAt = new();
     private Func<GameServerSession> _gameServer;
     private readonly PlayerState _state = new(); 
     public PlayerState State => _state;
@@ -180,30 +183,58 @@ public class GameSession : IEventHandler
     public void OnSyncWorld(WORLD_SYNC data)
     {
         State.World = data;
-
-        QueryChatChannels();
     }
 
-    private void QueryChatChannels()
+    private void QueryChatChannels(int teamFactionInfo, uint tongNameId)
     {
-        var now = (uint)Environment.TickCount;
+        ChatChannel.SplitTeamFaction(teamFactionInfo, out var teamId, out var factionId);
 
-        if (_chatQueryAt != 0 && now - _chatQueryAt < ChatQueryRetryMs)
-            return;
+        var tongId = (int)tongNameId;
 
-        _chatQueryAt = now;
+        var needFixed = !_fixedChannelsQueried;
+        var needDynamic = teamId != _queriedTeamId
+                          || factionId != _queriedFactionId
+                          || tongId != _queriedTongId;
+
+        if (!needFixed && !needDynamic) return;
 
         var chatSend = _gameServer().Client.chatSend;
 
-        foreach (var name in ChatChannel.AllNames)
-            chatSend.SendQueryChannelByName(name);
+        if (needFixed)
+        {
+            _fixedChannelsQueried = true;
 
-        Log("[Chat] Đã đăng ký " + ChatChannel.AllNames.Length + " key name kênh chat");
+            foreach (var name in ChatChannel.FixedNames)
+                chatSend.SendQueryChannelByName(name);
+
+            Log($"[Chat] Đăng ký {ChatChannel.FixedNames.Length} kênh cố định");
+        }
+
+        if (teamId >= 0 && teamId != _queriedTeamId)
+        {
+            _queriedTeamId = teamId;
+            chatSend.SendQueryChannelByName(ChatSendFunctions.CH_TEAM + teamId);
+            Log($"[Chat] Đăng ký kênh đội, teamId={teamId}");
+        }
+
+        if (factionId >= 0 && factionId != _queriedFactionId)
+        {
+            _queriedFactionId = factionId;
+            chatSend.SendQueryChannelByName(ChatSendFunctions.CH_FACTION + factionId);
+            Log($"[Chat] Đăng ký kênh môn phái, factionId={factionId}");
+        }
+
+        if (tongId > 0 && tongId != _queriedTongId)
+        {
+            _queriedTongId = tongId;
+            chatSend.SendQueryChannelByName(ChatSendFunctions.CH_TONG + tongId);
+            Log($"[Chat] Đăng ký kênh bang, tongId={tongId}");
+        }
     }
 
     public void OnSyncPlayer(PLAYER_SYNC data)
     {
-        State.PlayerInfos.AddOrUpdate(new PlayerSyncInfo
+        var info = new PlayerSyncInfo
         {
             Id = data.ID,
             TeamFactionInfo = data.TeamFactionInfo,
@@ -213,8 +244,11 @@ public class GameSession : IEventHandler
             PkValue = data.PKValue,
             Translife = data.Translife,
             TitleId = data.TitleID,
-        });
+        };
+
+        State.PlayerInfos.AddOrUpdate(info);
     }
+    
 
     public void OnSyncPlayerMin(PLAYER_NORMAL_SYNC data)
     {
@@ -236,6 +270,9 @@ public class GameSession : IEventHandler
             Translife = data.Translife,
             TitleId = data.TitleID,
         });
+
+        if (data.ID == State.PlayerId)
+            QueryChatChannels(data.TeamFactionInfo, data.dwTongNameID);
     }
 
     public void OnSyncNpc(NPC_SYNC data)
@@ -256,6 +293,21 @@ public class GameSession : IEventHandler
         }
 
         State.Npcs.AddOrUpdate(data);
+
+        // Đã có bản đầy đủ -> thôi không xin nữa
+        _npcRequestedAt.Remove(data.ID);
+    }
+
+    private void RequestNpcOnce(uint npcId)
+    {
+        var now = (uint)Environment.TickCount;
+
+        if (_npcRequestedAt.TryGetValue(npcId, out var last) && now - last < NpcRequestRetryMs)
+            return;
+
+        _npcRequestedAt[npcId] = now;
+
+        _gameServer().Client.Sender.SendRequestNpcPacket(npcId);
     }
 
     public void OnSyncNpcMin(NPC_NORMAL_SYNC data)
@@ -266,10 +318,8 @@ public class GameSession : IEventHandler
 
         if (found == null)
         {
-            // Chưa có NPC đầy đủ -> yêu cầu server sync.
-            // Gói này thiếu tên/loại/hệ nên không dựng mới được, phải chờ NPC_SYNC.
-            var gameServer = _gameServer();
-            gameServer.Client.Sender.SendRequestNpcPacket(data.ID);
+            // Chưa có NPC đầy đủ -> xin server sync.
+            RequestNpcOnce(data.ID);
             return;
         }
 
@@ -354,6 +404,7 @@ public class GameSession : IEventHandler
         //Update kho
         State.Npcs.Remove(data.ID);
         State.PlayerInfos.Remove(data.ID);
+        _npcRequestedAt.Remove(data.ID);
     }
 
     public void OnNetCommandWalk(NPC_WALK_SYNC data)
@@ -709,7 +760,11 @@ public class GameSession : IEventHandler
 
     public void OnRequestNpcFail(NPC_REQUEST_FAIL data)
     {
-        //Log($"{data}");
+        // GS bác yêu cầu. Ghi lại mốc để RequestNpcOnce không xin lại ngay - không có dòng này
+        // thì gói NPC_NORMAL_SYNC kế tiếp của id đó lại xin, thành vòng lặp vô hạn.
+        _npcRequestedAt[data.ID] = (uint)Environment.TickCount;
+
+        Log($"[Npc] GS từ chối yêu cầu NPC {data.ID}");
     }
 
     public void Ons2cChangeWeather(SYNC_WEATHER data)
@@ -729,8 +784,9 @@ public class GameSession : IEventHandler
 
     public void Ons2cQueryChannel()
     {
-        // GS chủ động yêu cầu -> đăng ký luôn
-        QueryChatChannels();
+        // Không đăng ký ở đây: gói này có thể tới trước lúc GS thật sự sẵn sàng.
+        // Việc đăng ký bám vào PLAYER_NORMAL_SYNC của chính mình.
+        Log("[Chat] s2cQueryChannel");
     }
 
     public void Ons2cSetRunAttackTag(S2C_SETRUNATTACKTAG data)
@@ -850,8 +906,6 @@ public class GameSession : IEventHandler
             Message = data.Message,
         });
 
-        if (data.ChannelId >= 0 && !ChatChannelRegistry.Instance.TryGetById((uint)data.ChannelId, out _))
-            QueryChatChannels();
     }
 
     public void Ons2cExtendFriend(byte[] data)

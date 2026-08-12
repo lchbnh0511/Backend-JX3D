@@ -5,16 +5,37 @@ namespace BackendJX3D.Core.Store;
 
 public static class ChatChannel
 {
-    public static readonly string[] AllNames =
+
+    public static readonly string[] FixedNames =
     [
         ChatSendFunctions.CH_NEARBY,    // \S
         ChatSendFunctions.CH_WORLD,     // global
         ChatSendFunctions.CH_CITY,      // \B
         ChatSendFunctions.CH_SYSTEM,    // GM
-        ChatSendFunctions.CH_TEAM,      // \T
-        ChatSendFunctions.CH_FACTION,   // \F
-        ChatSendFunctions.CH_TONG,      // \O
     ];
+    
+    public static IEnumerable<string> DynamicNames(int teamId, int factionId, int tongId)
+    {
+        if (teamId >= 0) yield return ChatSendFunctions.CH_TEAM + teamId;
+        if (factionId >= 0) yield return ChatSendFunctions.CH_FACTION + factionId;
+        if (tongId > 0) yield return ChatSendFunctions.CH_TONG + tongId;
+    }
+
+    public static void SplitTeamFaction(int teamFactionInfo, out int teamId, out int factionId)
+    {
+        teamId = (short)(teamFactionInfo >> 16);
+        factionId = (short)(teamFactionInfo & 0xFFFF);
+    }
+
+    //Toàn bộ tên đã đăng ký, dùng để dò lại id trong registry
+    public static IEnumerable<string> QueriedNames(int teamId, int factionId, int tongId)
+    {
+        foreach (var name in FixedNames)
+            yield return name;
+
+        foreach (var name in DynamicNames(teamId, factionId, tongId))
+            yield return name;
+    }
 
     public static KProtocol.CHANNELRESOURCE? FromName(string? name)
     {

@@ -26,14 +26,29 @@ public class ChatService : IChatService
 
     public async Task<List<ChatChannelResponse>> GetChannels()
     {
+        var session = _sessionManager.Get(_currentUser.SessionId);
+        var state = session.Handler.State;
+
         var channels = new List<ChatChannelResponse>();
 
-        foreach (var name in ChatChannel.AllNames)
+        var self = state.PlayerInfos.Get(state.PlayerId);
+
+        var teamId = -1;
+        var factionId = -1;
+        var tongId = 0;
+
+        if (self != null)
+        {
+            ChatChannel.SplitTeamFaction(self.Value.TeamFactionInfo, out teamId, out factionId);
+            tongId = (int)self.Value.TongNameId;
+            Console.WriteLine("teamID " + teamId + " factionID " + factionId + " tongID " + tongId);
+        }
+
+        foreach (var name in ChatChannel.QueriedNames(teamId, factionId, tongId))
         {
             var id = ChatChannelRegistry.Instance.GetChannelId(name);
 
-            if (id == uint.MaxValue)
-                continue;
+            if (id == uint.MaxValue) continue;
 
             channels.Add(new ChatChannelResponse
             {
