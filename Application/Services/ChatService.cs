@@ -5,8 +5,6 @@ using BackendJX3D.Core.Base;
 using BackendJX3D.Core.Store;
 using BackendJX3D.Infrastructure.Auth;
 using BackendJX3D.Infrastructure.Session;
-using BackendJX3D.Infrastructure.Session.Data;
-using Network.Header;
 
 namespace BackendJX3D.Application.Services;
 
@@ -41,7 +39,6 @@ public class ChatService : IChatService
         {
             ChatChannel.SplitTeamFaction(self.Value.TeamFactionInfo, out teamId, out factionId);
             tongId = (int)self.Value.TongNameId;
-            Console.WriteLine("teamID " + teamId + " factionID " + factionId + " tongID " + tongId);
         }
 
         foreach (var name in ChatChannel.QueriedNames(teamId, factionId, tongId))
@@ -67,14 +64,11 @@ public class ChatService : IChatService
 
         var take = Math.Clamp(limit, 1, chats.CapacityPerChannel);
 
-        var worldId = ChatChannelRegistry.Instance.GetChannelId(ChatSendFunctions.CH_WORLD);
-
-        IReadOnlyList<ChatMessage> messages;
-
-        if (channelId == null || (worldId != uint.MaxValue && channelId.Value == (int)worldId))
-            messages = chats.GetRecent(take);
-        else
-            messages = chats.GetRecentByChannelId(take, channelId.Value);
+        // "Tất cả" không phải một kênh của GS - không có key name nào cho nó, mình tự gom.
+        // Biểu diễn bằng channelId bỏ trống. Còn global là kênh thế giới thật, lọc như mọi kênh khác.
+        var messages = channelId == null
+            ? chats.GetRecent(take)
+            : chats.GetRecentByChannelId(take, channelId.Value);
 
         return await Task.FromResult(messages.Select(_chatMapper.FromChatRequest).ToList());
     }
