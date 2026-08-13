@@ -15,6 +15,8 @@ public interface ITeamService
 
     Task<TeamResponse> ChangeCaptain(uint playerId);
 
+    Task<TeamResponse> ReplyInvite(int idx, bool accept);
+
     // GS KHÔNG gửi gói phản hồi nào về cho người ra lệnh -> chỉ báo là đã gửi.
     // Client theo dõi kết quả bằng cách gọi lại GetTeam.
     Task<bool> DismissTeam();

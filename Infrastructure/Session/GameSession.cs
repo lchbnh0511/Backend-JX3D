@@ -21,6 +21,8 @@ public class GameSession : IEventHandler
 
     private const uint NpcRequestRetryMs = 5_000;
 
+    private const int TeamSlots = 8;
+
     private readonly Dictionary<uint, uint> _npcRequestedAt = new();
     private Func<GameServerSession> _gameServer;
     private readonly PlayerState _state = new(); 
@@ -576,11 +578,11 @@ public class GameSession : IEventHandler
     // Danh sách thành viên đội mình: có npcId + tên, KHÔNG có máu/mana/toạ độ
     public void Ons2cUpdataSelfTeamInfo(PLAYER_SEND_SELF_TEAM_INFO data)
     {
-        var members = new List<(uint Id, string Name)>(GameDataDef.MAX_TEAM_MEMBER);
+        var members = new List<(uint Id, string Name)>(TeamSlots);
 
         if (data.m_dwNpcID != null && data.m_szNpcName != null)
         {
-            for (var i = 0; i < GameDataDef.MAX_TEAM_MEMBER && i < data.m_dwNpcID.Length; i++)
+            for (var i = 0; i < TeamSlots && i < data.m_dwNpcID.Length; i++)
             {
                 if (data.m_dwNpcID[i] == 0) continue;
 
@@ -591,6 +593,9 @@ public class GameSession : IEventHandler
         State.Team.SetRoster(data.nTeamServerID, members);
 
         Log($"[Team] danh sách đội teamServerId={data.nTeamServerID}, {members.Count} thành viên");
+
+        
+        State.Waiters.Complete(State.PlayerId, data);
     }
 
     public void Ons2cApplyTeamInfoFalse(PLAYER_APPLY_TEAM_INFO_FALSE data)
@@ -698,7 +703,7 @@ public class GameSession : IEventHandler
     {
         if (data.m_sTeamInfo == null) return;
 
-        var members = new List<TeamMember>(GameDataDef.MAX_TEAM_MEMBER);
+        var members = new List<TeamMember>(TeamSlots);
 
         foreach (var info in data.m_sTeamInfo)
         {

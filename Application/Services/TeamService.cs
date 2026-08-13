@@ -152,6 +152,50 @@ public class TeamService : ITeamService
         return _teamMapper.FromTeamRequest(state.Team.GetSnapshot(), state.PlayerId);
     }
 
+    // nResult của SendReplyInviteTeamPacket: 1 = đồng ý, 0 = từ chối
+    private const int InviteAccept = 1;
+    private const int InviteDecline = 0;
+
+    public async Task<TeamResponse> ReplyInvite(int idx, bool accept)
+    {
+        var session = _sessionManager.Get(_currentUser.SessionId);
+        var state = session.Handler.State;
+
+        RequireInvite(state, idx);
+
+        if (accept && state.Team.GetSnapshot().HasTeam)
+            throw new BaseException.ConflictException(
+                "team_already_exists",
+                "Đang ở trong một đội, rời đội trước khi nhận lời mời khác.");
+
+        var sender = session.GameServer.GetSender();
+
+        if (!accept)
+        {
+            sender.SendReplyInviteTeamPacket(idx, InviteDecline);
+            state.Team.RemoveInvite(idx);
+
+            return _teamMapper.FromTeamRequest(state.Team.GetSnapshot(), state.PlayerId);
+        }
+
+        var result = await state.Waiters.SendAndWaitAsync<PLAYER_SEND_SELF_TEAM_INFO>(
+            state.PlayerId,
+            () => sender.SendReplyInviteTeamPacket(idx, InviteAccept),
+            GameCommand.Timeout);
+
+        // Packet đã rời khỏi máy là lời mời coi như đã tiêu ở phía GS, dù kết cục thế nào.
+        // Xoá trước khi kiểm timeout để app không thấy một lời mời không còn dùng được.
+        state.Team.RemoveInvite(idx);
+
+        if (result == null)
+            throw new BaseException.ErrorException(
+                504,
+                "gameserver_timeout",
+                "Game server không phản hồi lệnh đồng ý vào đội.");
+
+        return _teamMapper.FromTeamRequest(state.Team.GetSnapshot(), state.PlayerId);
+    }
+
     public async Task<bool> DismissTeam()
     {
         var session = _sessionManager.Get(_currentUser.SessionId);
@@ -208,6 +252,20 @@ public class TeamService : ITeamService
                 "Đang không ở trong đội nào.");
 
         return team;
+    }
+
+    // Chặn idx lạ ngay tại đây thay vì gửi lên GS: GS bỏ qua idx không tồn tại mà không
+    // trả gói lỗi nào -> API sẽ treo đủ 3 giây rồi báo timeout, sai bản chất lỗi.
+    private static void RequireInvite(PlayerState state, int idx)
+    {
+        foreach (var invite in state.Team.GetSnapshot().Invites)
+        {
+            if (invite.Idx == idx) return;
+        }
+
+        throw new BaseException.NotFoundException(
+            "invite_not_found",
+            $"Không có lời mời nào mang idx {idx}. Gọi GET /team để lấy danh sách lời mời.");
     }
 
     private static void RequireMember(TeamSnapshot team, uint playerId)
