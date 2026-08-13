@@ -1,7 +1,11 @@
+using BackendJX3D.Infrastructure.Session.Data;
 using Network.Header;
 
 public class BishopSession
 {
+    // Kết quả lệnh tạo/xoá nhân vật. null = chưa có phản hồi.
+    public volatile RoleCommandResult? RoleCommand;
+
     public NetworkClient Client { get; set; }
 
     // public TaskCompletionSource<int> LoginTcs { get; }

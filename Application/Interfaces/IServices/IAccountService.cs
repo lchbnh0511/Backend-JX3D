@@ -7,6 +7,7 @@ public interface IAccountService
 {
     Task<LoginResponse> LoginAccount(LoginRequest request);
     Task<List<CharacterResponse>> GetCharacters();
+    Task<CreateCharacterResponse> CreateCharacter(string charName, byte byRoleNo, ushort wPortraitID);
     Task<string> LoginServerAccount(LoginServerRequest request);
     Task<string> LogoutServerAccount();
     Task<string> LogoutBishop();

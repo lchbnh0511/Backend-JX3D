@@ -142,6 +142,132 @@ public class AccountService : IAccountService
             .ToList();
     }
 
+
+
+    public async Task<CreateCharacterResponse> CreateCharacter(string charName, byte byRoleNo, ushort wPortraitID)
+    {
+        var session = _sessionManager.Get(_currentUser.SessionId);
+
+        var bishop = session.Bishop;
+
+        if (bishop == null || bishop.Client == null || !bishop.Client.IsConnected)
+            throw new BaseException.ConflictException(
+                "bishop_disconnected",
+                "Phiên Bishop đã đóng nên không tạo được nhân vật. "
+                + "Vào game là socket Bishop bị đóng, phải đăng nhập lại mới tạo tiếp được.");
+
+        ValidateCharName(charName);
+        ValidateGenderAndSeries(byRoleNo, wPortraitID);
+        
+        bishop.RoleCommand = null;
+        bishop.LoginServerResultCode = -1;
+
+        await BS_ClientSend.CreateRole(bishop.Client, charName, byRoleNo, wPortraitID);
+
+        var timeout = TimeSpan.FromSeconds(5);
+        var start = DateTime.UtcNow;
+
+        while (bishop.RoleCommand == null &&
+               DateTime.UtcNow - start < timeout)
+        {
+            await Task.Delay(50);
+        }
+
+        var result = bishop.RoleCommand;
+
+        if (result == null)
+            throw new BaseException.ErrorException(
+                504,
+                "bishop_timeout",
+                "Bishop không phản hồi lệnh tạo nhân vật.");
+
+        if (!result.Succeeded)
+            throw new BaseException.ErrorException(
+                422,
+                "create_character_rejected",
+                $"Bishop từ chối tạo nhân vật '{charName}', mã lỗi {result.FailReason}.");
+
+        var response = new CreateCharacterResponse
+        {
+            // Lấy tên trong gói phản hồi, đó là tên Bishop thật sự đã tạo
+            Name = string.IsNullOrEmpty(result.Name) ? charName : result.Name,
+            Gender = byRoleNo,
+            Series = (byte)wPortraitID,
+        };
+
+        await WaitAutoEnterGame(bishop, response);
+
+        return response;
+    }
+
+
+    private static async Task WaitAutoEnterGame(BishopSession bishop, CreateCharacterResponse response)
+    {
+        var timeout = TimeSpan.FromSeconds(5);
+        var start = DateTime.UtcNow;
+
+        while (bishop.LoginServerResultCode == -1 &&
+               DateTime.UtcNow - start < timeout)
+        {
+            await Task.Delay(50);
+        }
+
+        if (bishop.LoginServerResultCode == -1)
+            return;
+
+        if (bishop.LoginServerResultCode != BishopProtocolDef.ROLE_LOGIN_RESULT_SUCCESS)
+        {
+            response.EnterGameMessage =
+                GameSession.GetLoginServerMessage(bishop.LoginServerResultCode);
+
+            return;
+        }
+
+        response.EnteredGame = true;
+
+        response.CharacterListStale = true;
+
+        // Ping đã tự bật trong GameSession.ReturnNotifyClient sau khi GS kết nối.
+    }
+
+
+
+    private static void ValidateGenderAndSeries(byte byRoleNo, ushort wPortraitID)
+    {
+        if (byRoleNo > 1)
+            throw new BaseException.BadRequestException(
+                "gender_invalid",
+                $"Giới tính chỉ nhận 0 hoặc 1.");
+
+        if (wPortraitID > 14)
+            throw new BaseException.BadRequestException(
+                "series_invalid",
+                $"Hệ chỉ nhận 0..4.");
+    }
+
+    private static void ValidateCharName(string charName)
+    {
+        if (string.IsNullOrWhiteSpace(charName))
+            throw new BaseException.BadRequestException(
+                "char_name_empty",
+                "Tên nhân vật rỗng.");
+
+        if (charName.Length > 31)
+            throw new BaseException.BadRequestException(
+                "char_name_too_long",
+                $"Tên nhân vật tối đa 31 ký tự.");
+
+
+        foreach (var c in charName)
+        {
+            if (c <= 0x7F && !char.IsControl(c)) continue;
+
+            throw new BaseException.BadRequestException(
+                "char_name_not_ascii",
+                "Tên nhân vật chỉ được dùng chữ và số không dấu.");
+        }
+    }
+
     public async Task<string> LoginServerAccount(LoginServerRequest request)
     {
         var session = _sessionManager.Get(_currentUser.SessionId);
@@ -170,9 +296,6 @@ public class AccountService : IAccountService
                 "not_found",
                 GameSession.GetLoginServerMessage(session.Bishop.LoginServerResultCode));
         }
-
-        // Vào game xong -> ping game server 3s/lần để giữ kết nối
-        session.GameServer.StartPing();
 
         return "Success";
     }

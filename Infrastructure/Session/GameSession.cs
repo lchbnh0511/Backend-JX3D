@@ -57,6 +57,8 @@ public class GameSession : IEventHandler
         var ip = new IPAddress(BitConverter.GetBytes(data.nIPAddr));
 
         await gameServer.Client.ConnectAsync(ip.ToString(), data.wPort);
+        
+        gameServer.StartPing(); //  3s/1
     }
     
     
@@ -79,7 +81,16 @@ public class GameSession : IEventHandler
 
     public void ResponseCreateCharacter(tagNewDelRoleResponse data)
     {
-        ////Log($"{data}");
+        var name = data.GetRoleName();
+
+        Log($"[Bishop] kết quả tạo nhân vật '{name}': thành công={data.bSucceeded}, mã lỗi={data.cFailReason}");
+
+        _bishop.RoleCommand = new RoleCommandResult
+        {
+            Name = name,
+            Succeeded = data.bSucceeded,
+            FailReason = data.cFailReason,
+        };
     }
 
     public void HandlePacketByTypeOfBishop(NetworkClient client, Packet packet)
@@ -112,8 +123,14 @@ public class GameSession : IEventHandler
 
     public void ReturnRoleList(int index, RoleBaseInfo data, bool isLast, NetworkClient client)
     {
+        if (_bishop.isLoadFullRoleBase)
+        {
+            _bishop.Roles.Clear();
+            _bishop.isLoadFullRoleBase = false;
+        }
+
         _bishop.Roles.Add(data);
-            
+
         if(isLast)
         {
             _bishop.isLoadFullRoleBase = true;

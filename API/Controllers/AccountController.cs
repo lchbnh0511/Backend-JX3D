@@ -34,6 +34,14 @@ namespace BackendJX3D.API.Controllers
         }
         
         [Authorize]
+        [HttpPost("create-characters")]
+        public async Task<ActionResult<BaseResponse<CreateCharacterResponse>>> CreateCharacter(string charName, byte byRoleNo, ushort wPortraitID)
+        {
+            var result = await accountService.CreateCharacter(charName, byRoleNo, wPortraitID);
+            return Ok(BaseResponse<CreateCharacterResponse>.OkResponse(result, "Tạo nhân vật thành công."));
+        }
+        
+        [Authorize]
         [HttpPost("logout-bishop")]
         public async Task<ActionResult<BaseResponse<string>>> LogoutBishop()
         {
