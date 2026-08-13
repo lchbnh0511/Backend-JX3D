@@ -565,62 +565,164 @@ public class GameSession : IEventHandler
 
     public void Ons2cShowTeamInfo(PLAYER_SEND_TEAM_INFO data)
     {
-        //Log($"{data}");
+        var team = State.Team.GetSnapshot();
+
+        if (data.nTeamServerID != 0 && data.nTeamServerID == team.TeamServerId)
+            State.Team.SetCaptain((uint)data.m_nCaptain);
+
+        Log($"[Team] thông tin đội teamServerId={data.nTeamServerID} captain={data.m_nCaptain}");
     }
 
+    // Danh sách thành viên đội mình: có npcId + tên, KHÔNG có máu/mana/toạ độ
     public void Ons2cUpdataSelfTeamInfo(PLAYER_SEND_SELF_TEAM_INFO data)
     {
-        //Log($"{data}");
+        var members = new List<(uint Id, string Name)>(GameDataDef.MAX_TEAM_MEMBER);
+
+        if (data.m_dwNpcID != null && data.m_szNpcName != null)
+        {
+            for (var i = 0; i < GameDataDef.MAX_TEAM_MEMBER && i < data.m_dwNpcID.Length; i++)
+            {
+                if (data.m_dwNpcID[i] == 0) continue;
+
+                members.Add((data.m_dwNpcID[i], data.GetMemberName(i)));
+            }
+        }
+
+        State.Team.SetRoster(data.nTeamServerID, members);
+
+        Log($"[Team] danh sách đội teamServerId={data.nTeamServerID}, {members.Count} thành viên");
     }
 
     public void Ons2cApplyTeamInfoFalse(PLAYER_APPLY_TEAM_INFO_FALSE data)
     {
-        //Log($"{data}");
+        Log("[Team] GS từ chối yêu cầu xem thông tin đội");
     }
 
     public void Ons2cCreateTeam(PLAYER_SEND_CREATE_TEAM_SUCCESS data)
     {
-        //Log($"{data}");
+        var self = string.IsNullOrEmpty(State.Name)
+            ? Array.Empty<(uint, string)>()
+            : new[] { (State.PlayerId, State.Name!) };
+
+        State.Team.SetRoster(data.nTeamServerID, self);
+        State.Team.SetCaptain(State.PlayerId);
+
+        Log($"[Team] tạo đội thành công, teamServerId={data.nTeamServerID}");
+
+        State.Waiters.Complete(State.PlayerId, new TeamCreateResult
+        {
+            Success = true,
+            TeamServerId = data.nTeamServerID,
+        });
     }
 
     public void Ons2cApplyCreateTeamFalse(PLAYER_SEND_CREATE_TEAM_FALSE data)
     {
-        //Log($"{data}");
+        Log($"[Team] tạo đội thất bại, errorId={data.m_btErrorID}");
+
+        State.Waiters.Complete(State.PlayerId, new TeamCreateResult
+        {
+            Success = false,
+            ErrorId = data.m_btErrorID,
+        });
     }
 
     public void Ons2cSetTeamState(PLAYER_TEAM_CHANGE_STATE data)
     {
-        //Log($"{data}");
+        // chua thay xai
+        Log($"[Team] đổi trạng thái đội state={data.m_btState} flag={data.m_btFlag}");
     }
 
     public void Ons2cApplyAddTeam(PLAYER_APPLY_ADD_TEAM data)
     {
-        //Log($"{data}");
+        State.Team.AddApplicant(data.m_dwTarNpcID);
+
+        Log($"[Team] có người xin vào đội, npcId={data.m_dwTarNpcID}");
     }
 
     public void Ons2cTeamAddMember(PLAYER_TEAM_ADD_MEMBER data)
     {
-        //Log($"{data}");
+        var name = data.GetName();
+
+        State.Team.AddMember(data.m_dwNpcID, name, data.m_btLevel);
+
+        // Vào đội rồi thì đơn xin của người đó coi như xong
+        State.Team.RemoveApplicant(data.m_dwNpcID);
+
+        Log($"[Team] thêm thành viên {data.m_dwNpcID} '{name}' cấp {data.m_btLevel}");
     }
 
+    // Truc xuat or thoat team
     public void Ons2cLeaveTeam(PLAYER_LEAVE_TEAM data)
     {
-        //Log($"{data}");
+        if (data.m_dwNpcID == State.PlayerId)
+        {
+            State.Team.Clear();
+            Log("[Team] mình đã ra khỏi đội");
+        }
+        else
+        {
+            State.Team.RemoveMember(data.m_dwNpcID);
+            Log($"[Team] thành viên {data.m_dwNpcID} đã ra khỏi đội");
+        }
+
+        State.Waiters.Complete(data.m_dwNpcID, data);
     }
 
     public void Ons2cTeamChangeCaptain(PLAYER_TEAM_CHANGE_CAPTAIN data)
     {
-        //Log($"{data}");
+        State.Team.SetCaptain(data.m_dwCaptainID);
+
+        Log($"[Team] đội trưởng mới={data.m_dwCaptainID} member={data.m_dwMemberID} flag={data.m_bFlag}");
+
+        // Chưa xác minh được field nào là id mình đã gửi lên, nên báo theo cả hai.
+        // Khoá nào không có ai chờ thì Complete là no-op, không tốn gì.
+        State.Waiters.Complete(data.m_dwCaptainID, data);
+
+        if (data.m_dwMemberID != data.m_dwCaptainID)
+            State.Waiters.Complete(data.m_dwMemberID, data);
     }
 
+    // Người khác mời mình vào đội. m_nIdx là số hiệu lời mời, cần giữ để trả lời đúng lời mời đó.
     public void Ons2cTeamInviteAdd(TEAM_INVITE_ADD_SYNC data)
     {
-        //Log($"{data}");
+        var name = data.GetName();
+
+        State.Team.AddInvite(data.m_nIdx, name);
+
+        Log($"[Team] '{name}' mời vào đội, idx={data.m_nIdx}");
     }
 
+    // Máu/mana/toạ độ của thành viên đội, KHÔNG có npcId -> ghép theo tên
     public void Ons2cTeamMemberInfo(tagMemberInfo data)
     {
-        //Log($"{data}");
+        if (data.m_sTeamInfo == null) return;
+
+        var members = new List<TeamMember>(GameDataDef.MAX_TEAM_MEMBER);
+
+        foreach (var info in data.m_sTeamInfo)
+        {
+            if (info.szName == null) continue;
+
+            var name = info.GetName();
+
+            if (string.IsNullOrEmpty(name)) continue;
+
+            members.Add(new TeamMember
+            {
+                Name = name,
+                Level = info.btLevel,
+                Faction = info.cFaction,
+                Camp = info.btCamp,
+                Portrait = info.btPortrait,
+                LifePercent = info.btLifePercent,
+                ManaPercent = info.btManaPercent,
+                MapX = info.nMpsX,
+                MapY = info.nMpsY,
+            });
+        }
+
+        State.Team.SetLiveInfo(members);
     }
 
     public void Ons2cSyncItem(ITEM_SYNC data)

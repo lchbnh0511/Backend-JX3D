@@ -24,4 +24,5 @@ public class PlayerState
     public IPlayerInfoRepository PlayerInfos { get; } = new PlayerInfoRepository();
     public ITaskRepository Tasks { get; } = new TaskRepository();
     public IChatRepository Chats { get; } = new ChatRepository();
+    public ITeamRepository Team { get; } = new TeamRepository();
 }

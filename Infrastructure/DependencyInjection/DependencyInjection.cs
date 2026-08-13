@@ -40,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<ISkillService, SkillService>();
         services.AddScoped<IChatService, ChatService>();
         services.AddScoped<ITaskService, TaskService>();
+        services.AddScoped<ITeamService, TeamService>();
         services.AddSingleton<ISessionManager, SessionManager>();
     }
     
@@ -140,6 +141,7 @@ public static class DependencyInjection
         services.AddScoped<ITaskMapper, TaskMapper>();
         services.AddScoped<IChatMapper, ChatMapper>();
         services.AddScoped<IPlayerMapper, PlayerMapper>();
+        services.AddScoped<ITeamMapper, TeamMapper>();
     }
     
     private static void AddLoadingResourcesService()
