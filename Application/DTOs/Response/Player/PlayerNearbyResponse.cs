@@ -17,4 +17,6 @@ public class PlayerNearbyResponse
 
     public string TongName { get; set; } = string.Empty;
     public byte PkFlag { get; set; }
+
+    public bool IsRidingHorse { get; set; }
 }

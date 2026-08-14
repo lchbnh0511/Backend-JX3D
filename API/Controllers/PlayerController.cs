@@ -20,9 +20,9 @@ public class PlayerController : ControllerBase
     }
     
     [HttpGet()]
-    public async Task<ActionResult<BaseResponse<PlayerResponse>>> GetPlayer()
+    public async Task<ActionResult<BaseResponse<PlayerResponse>>> GetPlayer(uint? id = null)
     {
-        var result = await playerService.GetPlayer();
+        var result = await playerService.GetPlayer(id);
         return Ok(BaseResponse<PlayerResponse>.OkResponse(result, "Get Player thành công."));
     }
     

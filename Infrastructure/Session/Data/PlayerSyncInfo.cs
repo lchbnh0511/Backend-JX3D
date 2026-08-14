@@ -12,6 +12,8 @@ public struct PlayerSyncInfo
     public byte PkValue;
     public byte Translife;
     public int TitleId;
+    
+    public bool IsRidingHorse;
 
     public readonly bool HasTeam => TeamFactionInfo >= 0;
 }

@@ -123,6 +123,7 @@ public class PlayerMapper : IPlayerMapper
             TeamFactionInfo = info?.TeamFactionInfo ?? -1,
             TongName = info?.TongName ?? string.Empty,
             PkFlag = info?.PkFlag ?? 0,
+            IsRidingHorse = info?.IsRidingHorse ?? false,
 
             Id = npc.ID,
             Name = npc.GetName(),

@@ -254,6 +254,8 @@ public class GameSession : IEventHandler
 
     public void OnSyncPlayer(PLAYER_SYNC data)
     {
+        var old = State.PlayerInfos.Get(data.ID);
+
         var info = new PlayerSyncInfo
         {
             Id = data.ID,
@@ -264,6 +266,10 @@ public class GameSession : IEventHandler
             PkValue = data.PKValue,
             Translife = data.Translife,
             TitleId = data.TitleID,
+
+            // Gói này không mang cờ đang cưỡi (nó ở NPC_HORSE_SYNC), mà AddOrUpdate ghi đè
+            // cả struct -> phải giữ lại giá trị cũ, không thì mỗi gói sync là mất trạng thái.
+            IsRidingHorse = old?.IsRidingHorse ?? false,
         };
 
         State.PlayerInfos.AddOrUpdate(info);
@@ -289,6 +295,9 @@ public class GameSession : IEventHandler
             PkValue = data.PKValue,
             Translife = data.Translife,
             TitleId = data.TitleID,
+
+            // Cùng lý do như OnSyncPlayer: cờ đang cưỡi tới bằng gói khác, phải giữ lại
+            IsRidingHorse = old?.IsRidingHorse ?? false,
         });
 
         if (data.ID == State.PlayerId)
@@ -487,6 +496,17 @@ public class GameSession : IEventHandler
     public void OnNetCommandSetHorse(NPC_HORSE_SYNC data)
     {
         Log($"[OnNetCommandSetHorse] m_dwID "  + data.m_dwID + " m_bRideHorse " + data.m_bRideHorse);
+
+        var old = State.PlayerInfos.Get(data.m_dwID);
+        
+        if (old != null)
+        {
+            var info = old.Value;
+
+            info.IsRidingHorse = data.m_bRideHorse;
+
+            State.PlayerInfos.AddOrUpdate(info);
+        }
 
         State.Waiters.Complete(data.m_dwID, data);
     }

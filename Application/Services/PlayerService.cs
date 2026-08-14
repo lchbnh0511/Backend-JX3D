@@ -25,17 +25,49 @@ public class PlayerService : IPlayerService
     }
 
 
-    public async Task<PlayerResponse?> GetPlayer()
+    public async Task<PlayerResponse> GetPlayer(uint? playerId = null)
     {
         var session = _sessionManager.Get(_currentUser.SessionId);
         var state = session.Handler.State;
 
-        if (state.CurPlayer == null || state.PlayerStats == null)
-            return await Task.FromResult<PlayerResponse?>(null);
+        var targetId = playerId is null || playerId.Value == 0
+            ? state.PlayerId
+            : playerId.Value;
 
-        var response = _playerMapper.FromPlayerRequest(state.CurPlayer.Value, state.PlayerStats.Value, state.Name!, state.PlayerNpc);
+        var isSelf = targetId == state.PlayerId;
 
-        return await Task.FromResult<PlayerResponse?>(response);
+        var info = state.PlayerInfos.Get(targetId);
+        
+        var npc = isSelf ? state.PlayerNpc : state.Npcs.Get(targetId);
+
+        if (!isSelf && npc == null && info == null)
+            throw new BaseException.NotFoundException(
+                "player_not_found",
+                $"Chưa thấy người chơi {targetId}. Gọi GET /player/nearby để lấy danh sách quanh mình.");
+
+        var response = new PlayerResponse
+        {
+            Id = targetId,
+            IsSelf = isSelf,
+        };
+
+
+        if (isSelf && state.CurPlayer != null && state.PlayerStats != null)
+        {
+            var self = _playerMapper.FromPlayerRequest(
+                state.CurPlayer.Value,
+                state.PlayerStats.Value,
+                state.Name ?? string.Empty,
+                state.PlayerNpc);
+
+            response.PlayerInfo = self.PlayerInfo;
+            response.Stats = self.Stats;
+        }
+
+        if (npc != null)
+            response.Visible = _playerMapper.FromPlayerNearbyRequest(npc.Value, info);
+
+        return await Task.FromResult(response);
     }
 
     public async Task<PlayerSittingResponse> Sitting()
