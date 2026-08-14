@@ -2,6 +2,7 @@ using BackendJX3D.Infrastructure.Session.Data;
 using BackendJX3D.Domain.Entities;
 using BackendJX3D.Core.Base;
 using BackendJX3D.Core.Store;
+using BackendJX3D.Core.Utils;
 using Network.Header;
 using Network.Bishop;
 using System.Net;
@@ -785,35 +786,37 @@ public class GameSession : IEventHandler
     {
         //Log($"{data}");
     }
-
+    
     public void OnOpenSaleBox(BUY_SELL_SYNC data)
     {
-        //Log($"{data}");
+        Log($"[Shop] OnOpenSaleBox buyIdx={data.m_BuySellInfo.m_nBuyIdx} "
+            + $"moneyUnit={data.m_BuySellInfo.m_nMoneyUnit} tax={data.m_BuySellInfo.m_nTax}");
     }
 
     public void OnOpenStoreBox(byte[] pMsg)
     {
-        Log($"{pMsg}");
+        Log($"[Shop] OnOpenStoreBox {pMsg?.Length ?? 0} byte");
     }
 
     public void Ons2cSyncStoreItem(SSyncStoreItem data)
     {
-        //Log($"{data}");
+        Log("[Shop] Ons2cSyncStoreItem");
     }
 
     public void Ons2cViewStoreItem(SViewStoreItem data)
     {
-        //Log($"{data}");
+        Log("[Shop] Ons2cViewStoreItem");
     }
 
     public void Ons2cBuyStoreItem(SBuyStoreItem data)
     {
-        //Log($"{data}");
+        Log("[Shop] Ons2cBuyStoreItem");
     }
 
     public void Ons2cOpenSuperShop(BUY_SELL_SYNC data)
     {
-        //Log($"{data}");
+        Log($"[Shop] Ons2cOpenSuperShop buyIdx={data.m_BuySellInfo.m_nBuyIdx} "
+            + $"moneyUnit={data.m_BuySellInfo.m_nMoneyUnit} tax={data.m_BuySellInfo.m_nTax}");
     }
 
     public void Ons2cTradeChangeState(TRADE_CHANGE_STATE_SYNC data)
@@ -841,9 +844,29 @@ public class GameSession : IEventHandler
         //Log($"{data}");
     }
 
+
     public void OnSyncScriptAction(PLAYER_SCRIPTACTION_SYNC data)
     {
-        //Log($"{data}");
+        var dialog = new NpcDialog
+        {
+            UiId = data.m_btUIId,
+            OptionNum = data.m_btOptionNum,
+            ByteParam1 = data.m_btParam1,
+            ByteParam2 = data.m_btParam2,
+            Param = data.m_nParam,
+            Param1 = data.m_nParam1,
+            Param2 = data.m_nParam2,
+
+            // Không dùng data.GetContent(): nó cắt ở byte 0 đầu tiên nên mất hết lựa chọn
+            Segments = ScriptContent.Split(data.m_pContent, data.m_nBufferLen),
+        };
+
+        State.Dialog = dialog;
+
+        Log($"[Dialog] uiId={dialog.UiId} optionNum={dialog.OptionNum} "
+            + $"segments={dialog.Segments.Length} bufferLen={data.m_nBufferLen}");
+
+        State.Waiters.Complete(State.PlayerId, data);
     }
 
     public void Ons2cSyncRoleList(ROLE_LIST_SYNC data)

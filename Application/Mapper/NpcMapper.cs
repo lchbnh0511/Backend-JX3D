@@ -1,5 +1,6 @@
 using BackendJX3D.Application.DTOs.Response.Npc;
 using BackendJX3D.Application.Interfaces.IMapper;
+using BackendJX3D.Infrastructure.Session.Data;
 using Network.Header;
 
 namespace BackendJX3D.Application.Mapper;
@@ -37,6 +38,34 @@ public class NpcMapper : INpcMapper
             nHue = npc.m_nHue,
             dwStatus = npc.m_dwStatus,
             szName = npc.GetName()
+        };
+    }
+
+    public NpcDialogResponse FromDialogRequest(NpcDialog? dialog, uint npcId)
+    {
+        if (dialog == null)
+            return new NpcDialogResponse { HasDialog = false, NpcId = npcId };
+
+        var segments = dialog.Segments ?? [];
+
+        return new NpcDialogResponse
+        {
+            HasDialog = true,
+            NpcId = npcId,
+            UiId = dialog.UiId,
+            OptionNum = dialog.OptionNum,
+
+            // Giả thiết: đoạn đầu là lời NPC, các đoạn sau là lựa chọn.
+            // Segments trả nguyên để đối chiếu nếu giả thiết này sai.
+            Text = segments.Length > 0 ? segments[0] : string.Empty,
+            Options = segments.Length > 1 ? segments.Skip(1).ToList() : [],
+            Segments = segments.ToList(),
+
+            ByteParam1 = dialog.ByteParam1,
+            ByteParam2 = dialog.ByteParam2,
+            Param = dialog.Param,
+            Param1 = dialog.Param1,
+            Param2 = dialog.Param2,
         };
     }
 }

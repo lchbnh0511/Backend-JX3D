@@ -16,6 +16,10 @@ public class PlayerState
 
     public CURPLAYER_NORMAL_SYNC? PlayerStats { get; set; }
     public PLAYER_ATTRIBUTE_SYNC? Attribute { get; set; }
+
+    // volatile để request thread thấy ngay cái recv thread vừa ghi.
+    public volatile NpcDialog? Dialog;
+
     public PacketWaiters Waiters { get; } = new();
 
     public IItemRepository Items { get; } = new ItemRepository();

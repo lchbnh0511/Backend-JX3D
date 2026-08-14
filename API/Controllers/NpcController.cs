@@ -26,4 +26,19 @@ public class NpcController : ControllerBase
         var result = await npcService.GetListNpc();
         return Ok(BaseResponse<List<NpcResponse>>.OkResponse(result, "Lấy danh sách Npc thành công."));
     }
+
+    [HttpPost("dialog")]
+    public async Task<ActionResult<BaseResponse<NpcDialogResponse>>> OpenDialog(uint npcId)
+    {
+        var result = await npcService.OpenDialog(npcId);
+        return Ok(BaseResponse<NpcDialogResponse>.OkResponse(result, "Mở hội thoại NPC thành công."));
+    }
+
+    // index lấy theo vị trí trong options của lần gọi trước. uiId backend tự giữ.
+    [HttpPost("dialog/select")]
+    public async Task<ActionResult<BaseResponse<NpcDialogResponse>>> SelectDialogOption(int index)
+    {
+        var result = await npcService.SelectDialogOption(index);
+        return Ok(BaseResponse<NpcDialogResponse>.OkResponse(result, "Chọn hội thoại thành công."));
+    }
 }
