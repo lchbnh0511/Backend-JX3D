@@ -131,8 +131,7 @@ public class NpcService : INpcService
         return await Task.FromResult(_npcMapper.FromShopRequest(state.Shop));
     }
 
-    // Nhịp dò lại túi đồ. 100ms cho ~30 lần dò trong 3 giây - đủ mịn mà không phải
-    // chụp cả túi 60 lần như khi để 50ms.
+    // Nhịp dò lại túi đồ. 100ms cho ~30 lần dò trong 3 giây
     private static readonly TimeSpan BuyPollInterval = TimeSpan.FromMilliseconds(100);
 
     public async Task<ShopBuyResponse> BuyItem(int buyIdx, int count)
@@ -164,8 +163,6 @@ public class NpcService : INpcService
             Count = count,
         };
 
-        // Chụp túi TRƯỚC khi gửi. Đây là mốc xác nhận duy nhất dùng được: GS không trả
-        // gói nào mang thứ đối chiếu với lệnh mua.
         var before = InventoryDiff.Snapshot(state.Items.GetAll());
 
         session.GameServer.GetSender().SendPlayerBuyItemPacket(shop.ShopIdx, buyIdx, count);
@@ -184,22 +181,19 @@ public class NpcService : INpcService
             response.WaitedMs = (long)(DateTime.UtcNow - start).TotalMilliseconds;
             response.Message = "Mua thành công.";
 
-            response.Items = gained
-                .Select(g => new ShopBuyItemResponse
+            response.Items = gained.Select(g => new ShopBuyItemResponse
                 {
                     AddedCount = g.AddedCount,
                     IsNew = g.IsNew,
                     Item = _itemMapper.FromItemRequest(g.Item),
-                })
-                .ToList();
+                }).ToList();
 
             return response;
         }
 
         response.WaitedMs = (long)(DateTime.UtcNow - start).TotalMilliseconds;
-        response.Message =
-            "Túi đồ không đổi sau khi gửi lệnh mua - game server đã bỏ qua lệnh. "
-            + "Thường do sai buyIdx, không đủ tiền, không đủ cấp, hoặc túi đầy.";
+        response.Message = "Túi đồ không đổi sau khi gửi lệnh mua - game server đã bỏ qua lệnh. "
+                           + "Thường do sai buyIdx, không đủ tiền, không đủ cấp, hoặc túi đầy.";
 
         return response;
     }

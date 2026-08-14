@@ -2,8 +2,6 @@ using Network.Header;
 
 namespace BackendJX3D.Core.Utils;
 
-
-
 // So túi đồ trước/sau một lệnh để biết đã nhận thêm hàng gì.
 public static class InventoryDiff
 {
@@ -18,9 +16,7 @@ public static class InventoryDiff
         return snapshot;
     }
 
-    public static List<InventoryGain> Gained(
-        Dictionary<int, int> before,
-        IReadOnlyCollection<ITEM_SYNC> after)
+    public static List<InventoryGain> Gained(Dictionary<int, int> before, IReadOnlyCollection<ITEM_SYNC> after)
     {
         var gained = new List<InventoryGain>();
 
@@ -28,14 +24,7 @@ public static class InventoryDiff
         {
             var isNew = !before.TryGetValue(item.m_dwID, out var oldCount);
 
-            // Món MỚI: tính là được 1 kể cả khi m_Count = 0, vì đồ không xếp chồng
-            // (trang bị, sách...) có m_Count = 0 - lấy số lượng làm mốc là bỏ sót nó.
-            //
-            // Món CŨ: chỉ tính khi số lượng TĂNG. Món xếp chồng (thuốc, vật liệu) mua thêm
-            // thì không sinh id mới, chỉ tăng m_Count. Giảm là do việc khác chứ không phải mua.
-            var added = isNew
-                ? Math.Max(item.m_Count, 1)
-                : item.m_Count - oldCount;
+            var added = isNew ? Math.Max(item.m_Count, 1) : item.m_Count - oldCount;
 
             if (added <= 0) continue;
 
