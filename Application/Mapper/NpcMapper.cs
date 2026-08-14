@@ -55,8 +55,6 @@ public class NpcMapper : INpcMapper
             UiId = dialog.UiId,
             OptionNum = dialog.OptionNum,
 
-            // Giả thiết: đoạn đầu là lời NPC, các đoạn sau là lựa chọn.
-            // Segments trả nguyên để đối chiếu nếu giả thiết này sai.
             Text = segments.Length > 0 ? segments[0] : string.Empty,
             Options = segments.Length > 1 ? segments.Skip(1).ToList() : [],
             Segments = segments.ToList(),
@@ -66,6 +64,24 @@ public class NpcMapper : INpcMapper
             Param = dialog.Param,
             Param1 = dialog.Param1,
             Param2 = dialog.Param2,
+        };
+    }
+
+    public NpcShopResponse FromShopRequest(ShopState? shop)
+    {
+        if (shop == null)
+            return new NpcShopResponse { IsOpen = false };
+
+        return new NpcShopResponse
+        {
+            IsOpen = true,
+            ShopIdx = shop.ShopIdx,
+            NpcId = shop.NpcId,
+            MoneyUnit = shop.MoneyUnit,
+            Tax = shop.Tax,
+            SubWorldId = shop.SubWorldId,
+            MapX = shop.MapX,
+            MapY = shop.MapY,
         };
     }
 }

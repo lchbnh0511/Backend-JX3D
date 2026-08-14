@@ -6,19 +6,18 @@ public class NpcDialogResponse
     public uint NpcId { get; set; }
     public byte UiId { get; set; }
 
-    //Số lựa chọn GS khai. So với Options.Count để biết cách tách nội dung có đúng chưa.
     public byte OptionNum { get; set; }
-
-    //Đoạn đầu của nội dung - theo giả thiết là lời NPC
     public string Text { get; set; } = string.Empty;
-
-    //Các đoạn sau đoạn đầu - theo giả thiết là danh sách lựa chọn
     public List<string> Options { get; set; } = [];
-
-    //Toàn bộ đoạn đã tách, kể cả đoạn đầu. Để đối chiếu khi Text/Options tách chưa đúng.
+    //Toàn bộ đoạn đã tách
     public List<string> Segments { get; set; } = [];
+    
+    public bool ShopOpened { get; set; }
 
-    //Tham số thô của gói, chưa dò được ý nghĩa
+    //Chỉ có khi ShopOpened = true
+    public NpcShopResponse? Shop { get; set; }
+
+    //tham số này ko biết là gì, để đại ở đây
     public byte ByteParam1 { get; set; }
     public byte ByteParam2 { get; set; }
     public int Param { get; set; }

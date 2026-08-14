@@ -8,4 +8,7 @@ public interface INpcMapper
 {
     NpcResponse FromNpcRequest(NPC_SYNC npc);
     NpcDialogResponse FromDialogRequest(NpcDialog? dialog, uint npcId);
+
+    // shop = null -> IsOpen = false
+    NpcShopResponse FromShopRequest(ShopState? shop);
 }

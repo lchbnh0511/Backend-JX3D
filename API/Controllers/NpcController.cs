@@ -34,11 +34,24 @@ public class NpcController : ControllerBase
         return Ok(BaseResponse<NpcDialogResponse>.OkResponse(result, "Mở hội thoại NPC thành công."));
     }
 
-    // index lấy theo vị trí trong options của lần gọi trước. uiId backend tự giữ.
     [HttpPost("dialog/select")]
     public async Task<ActionResult<BaseResponse<NpcDialogResponse>>> SelectDialogOption(int index)
     {
         var result = await npcService.SelectDialogOption(index);
         return Ok(BaseResponse<NpcDialogResponse>.OkResponse(result, "Chọn hội thoại thành công."));
+    }
+
+    [HttpGet("shop")]
+    public async Task<ActionResult<BaseResponse<NpcShopResponse>>> GetShop()
+    {
+        var result = await npcService.GetShop();
+        return Ok(BaseResponse<NpcShopResponse>.OkResponse(result, "Lấy thông tin cửa hàng thành công."));
+    }
+    
+    [HttpPost("shop/buy")]
+    public async Task<ActionResult<BaseResponse<ShopBuyResponse>>> BuyItem(int buyIdx, int count = 1)
+    {
+        var result = await npcService.BuyItem(buyIdx, count);
+        return Ok(BaseResponse<ShopBuyResponse>.OkResponse(result, result.Message));
     }
 }

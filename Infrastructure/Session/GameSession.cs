@@ -789,8 +789,22 @@ public class GameSession : IEventHandler
     
     public void OnOpenSaleBox(BUY_SELL_SYNC data)
     {
-        Log($"[Shop] OnOpenSaleBox buyIdx={data.m_BuySellInfo.m_nBuyIdx} "
-            + $"moneyUnit={data.m_BuySellInfo.m_nMoneyUnit} tax={data.m_BuySellInfo.m_nTax}");
+        var info = data.m_BuySellInfo;
+
+        State.Shop = new ShopState
+        {
+            ShopIdx = info.m_nBuyIdx,
+            MoneyUnit = info.m_nMoneyUnit,
+            Tax = info.m_nTax,
+            SubWorldId = info.m_SubWorldID,
+            MapX = info.m_nMpsX,
+            MapY = info.m_nMpsY,
+        };
+
+        Log($"[Shop] mở cửa hàng shopIdx={info.m_nBuyIdx} "
+            + $"moneyUnit={info.m_nMoneyUnit} tax={info.m_nTax}");
+
+        State.Waiters.Complete(State.PlayerId, data);
     }
 
     public void OnOpenStoreBox(byte[] pMsg)

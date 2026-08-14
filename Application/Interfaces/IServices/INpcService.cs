@@ -7,4 +7,6 @@ public interface INpcService
     Task<List<NpcResponse>> GetListNpc();
     Task<NpcDialogResponse> OpenDialog(uint npcId);
     Task<NpcDialogResponse> SelectDialogOption(int index);
+    Task<NpcShopResponse> GetShop();
+    Task<ShopBuyResponse> BuyItem(int buyIdx, int count);
 }

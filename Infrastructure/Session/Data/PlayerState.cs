@@ -19,6 +19,8 @@ public class PlayerState
 
     // volatile để request thread thấy ngay cái recv thread vừa ghi.
     public volatile NpcDialog? Dialog;
+    
+    public volatile ShopState? Shop;
 
     public PacketWaiters Waiters { get; } = new();
 
