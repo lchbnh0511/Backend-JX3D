@@ -669,10 +669,11 @@ public class GameSession : IEventHandler
 
         State.Team.AddMember(data.m_dwNpcID, name, data.m_btLevel);
 
-        // Vào đội rồi thì đơn xin của người đó coi như xong
         State.Team.RemoveApplicant(data.m_dwNpcID);
 
         Log($"[Team] thêm thành viên {data.m_dwNpcID} '{name}' cấp {data.m_btLevel}");
+
+        State.Waiters.Complete(data.m_dwNpcID, data);
     }
 
     // Truc xuat or thoat team

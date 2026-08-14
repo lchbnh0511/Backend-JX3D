@@ -195,6 +195,41 @@ public class TeamService : ITeamService
 
         return _teamMapper.FromTeamRequest(state.Team.GetSnapshot(), state.PlayerId);
     }
+    
+    public async Task<TeamResponse> ReplyJoinRequest(uint playerId, bool accept)
+    {
+        var session = _sessionManager.Get(_currentUser.SessionId);
+        var state = session.Handler.State;
+
+        var team = RequireTeam(state);
+
+        RequireApplicant(state, playerId);
+        RequireCaptain(team, state.PlayerId, "nhận người vào đội");
+
+        var sender = session.GameServer.GetSender();
+
+        if (!accept)
+        {
+            sender.SendReplyInviteTeamPacket((int)playerId, InviteDecline);
+            state.Team.RemoveApplicant(playerId);
+
+            return _teamMapper.FromTeamRequest(state.Team.GetSnapshot(), state.PlayerId);
+        }
+
+        var result = await state.Waiters.SendAndWaitAsync<PLAYER_TEAM_ADD_MEMBER>(
+            playerId,
+            () => sender.SendPlayerAcceptTeamMemberPacket(playerId),
+            GameCommand.Timeout);
+        state.Team.RemoveApplicant(playerId);
+
+        if (result == null)
+            throw new BaseException.ErrorException(
+                504,
+                "gameserver_timeout",
+                "Game server không phản hồi lệnh nhận người vào đội.");
+
+        return _teamMapper.FromTeamRequest(state.Team.GetSnapshot(), state.PlayerId);
+    }
 
     public async Task<bool> DismissTeam()
     {
@@ -206,6 +241,8 @@ public class TeamService : ITeamService
         RequireCaptain(team, state.PlayerId, "giải tán đội");
 
         session.GameServer.GetSender().SendApplyTeamDismissPacket();
+        
+        state.Team.Clear();
 
         return await Task.FromResult(true);
     }
@@ -254,8 +291,18 @@ public class TeamService : ITeamService
         return team;
     }
 
-    // Chặn idx lạ ngay tại đây thay vì gửi lên GS: GS bỏ qua idx không tồn tại mà không
-    // trả gói lỗi nào -> API sẽ treo đủ 3 giây rồi báo timeout, sai bản chất lỗi.
+    private static void RequireApplicant(PlayerState state, uint playerId)
+    {
+        foreach (var applicant in state.Team.GetSnapshot().Applicants)
+        {
+            if (applicant == playerId) return;
+        }
+
+        throw new BaseException.NotFoundException(
+            "applicant_not_found",
+            $"Người chơi {playerId} không có đơn xin vào đội. Gọi GET /team để lấy danh sách.");
+    }
+
     private static void RequireInvite(PlayerState state, int idx)
     {
         foreach (var invite in state.Team.GetSnapshot().Invites)
@@ -282,8 +329,7 @@ public class TeamService : ITeamService
             $"Người chơi {playerId} không có trong đội.");
     }
 
-    // CaptainId = 0 là chưa biết đội trưởng là ai (GS không gửi kèm danh sách thành viên),
-    // lúc đó không chặn - để GS tự quyết, còn hơn chặn oan đội trưởng thật.
+    // CaptainId = 0 là chưa biết đội trưởng là ai
     private static void RequireCaptain(TeamSnapshot team, uint selfId, string action)
     {
         if (team.CaptainId == 0 || team.CaptainId == selfId) return;

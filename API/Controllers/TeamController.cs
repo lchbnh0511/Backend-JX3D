@@ -60,6 +60,14 @@ public class TeamController : ControllerBase
         return Ok(BaseResponse<TeamResponse>.OkResponse(result, accept ? "Đã vào đội." : "Đã từ chối lời mời."));
     }
 
+    [HttpPost("applicant/reply")]
+    public async Task<ActionResult<BaseResponse<TeamResponse>>> ReplyJoinRequest(uint playerId, bool accept)
+    {
+        var result = await teamService.ReplyJoinRequest(playerId, accept);
+        return Ok(BaseResponse<TeamResponse>.OkResponse(
+            result, accept ? "Đã nhận vào đội." : "Đã từ chối đơn xin vào đội."));
+    }
+
     // Ba lệnh dưới GS không trả gói phản hồi cho người ra lệnh, nên chỉ báo là đã gửi.
     // Client gọi lại GET /team để thấy kết quả.
     [HttpPost("dismiss")]
