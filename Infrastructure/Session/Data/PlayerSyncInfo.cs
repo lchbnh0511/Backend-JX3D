@@ -15,5 +15,8 @@ public struct PlayerSyncInfo
     
     public bool IsRidingHorse;
 
+    //Flag check first login
+    public bool HorseSeeded;
+
     public readonly bool HasTeam => TeamFactionInfo >= 0;
 }

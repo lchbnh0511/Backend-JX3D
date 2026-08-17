@@ -267,9 +267,9 @@ public class GameSession : IEventHandler
             Translife = data.Translife,
             TitleId = data.TitleID,
 
-            // Gói này không mang cờ đang cưỡi (nó ở NPC_HORSE_SYNC), mà AddOrUpdate ghi đè
-            // cả struct -> phải giữ lại giá trị cũ, không thì mỗi gói sync là mất trạng thái.
+            //gia tri ko chuan. lay gia tri dung o sync_min
             IsRidingHorse = old?.IsRidingHorse ?? false,
+            HorseSeeded = old?.HorseSeeded ?? false,
         };
 
         State.PlayerInfos.AddOrUpdate(info);
@@ -285,6 +285,15 @@ public class GameSession : IEventHandler
             ? old.Value.TongName
             : data.GetTongName();
 
+        var seeded = old?.HorseSeeded ?? false;
+
+        var riding = seeded
+            ? old!.Value.IsRidingHorse
+            : data.HorseType > 0;
+
+        if (!seeded)
+            Log($"[Horse] gieo mốc đầu id={data.ID} HorseType={data.HorseType} -> riding={riding}");
+
         State.PlayerInfos.AddOrUpdate(new PlayerSyncInfo
         {
             Id = data.ID,
@@ -296,8 +305,8 @@ public class GameSession : IEventHandler
             Translife = data.Translife,
             TitleId = data.TitleID,
 
-            // Cùng lý do như OnSyncPlayer: cờ đang cưỡi tới bằng gói khác, phải giữ lại
-            IsRidingHorse = old?.IsRidingHorse ?? false,
+            IsRidingHorse = riding,
+            HorseSeeded = true,
         });
 
         if (data.ID == State.PlayerId)
@@ -495,15 +504,17 @@ public class GameSession : IEventHandler
 
     public void OnNetCommandSetHorse(NPC_HORSE_SYNC data)
     {
-        Log($"[OnNetCommandSetHorse] m_dwID "  + data.m_dwID + " m_bRideHorse " + data.m_bRideHorse);
+        Log($"[Horse] set id={data.m_dwID} riding={data.m_bRideHorse}");
 
         var old = State.PlayerInfos.Get(data.m_dwID);
-        
+
         if (old != null)
         {
             var info = old.Value;
 
             info.IsRidingHorse = data.m_bRideHorse;
+
+            info.HorseSeeded = true;
 
             State.PlayerInfos.AddOrUpdate(info);
         }
