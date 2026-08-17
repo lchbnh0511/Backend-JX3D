@@ -54,4 +54,18 @@ public class ItemController : ControllerBase
         var result = await itemService.ThrowAwayItem(request.ItemId);
         return Ok(BaseResponse<bool>.OkResponse(result, "Vứt Item thành công."));
     }
+    
+    [HttpGet("chest")]
+    public async Task<ActionResult<BaseResponse<ChestResponse>>> GetChest()
+    {
+        var result = await itemService.GetChest();
+        return Ok(BaseResponse<ChestResponse>.OkResponse(result, "Lấy vật phẩm trong rương thành công."));
+    }
+
+    [HttpPost("move")]
+    public async Task<ActionResult<BaseResponse<ItemMoveResponse>>> MoveItem([FromBody] ItemMoveRequest request)
+    {
+        var result = await itemService.MoveItem(request.ItemId, request.DestPlace, request.DestX, request.DestY);
+        return Ok(BaseResponse<ItemMoveResponse>.OkResponse(result, "Chuyển vật phẩm thành công."));
+    }
 }

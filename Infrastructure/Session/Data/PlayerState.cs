@@ -22,6 +22,7 @@ public class PlayerState
     
     public volatile ShopState? Shop;
 
+
     public PacketWaiters Waiters { get; } = new();
 
     public IItemRepository Items { get; } = new ItemRepository();

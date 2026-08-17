@@ -1,4 +1,5 @@
 using BackendJX3D.Application.DTOs.Response.Item;
+using Network.Header;
 
 namespace BackendJX3D.Application.Interfaces.IServices;
 
@@ -11,4 +12,8 @@ public interface IITemService
     Task<ItemUseResponse> UnEquipItem(uint itemId);
     
     Task<bool> ThrowAwayItem(uint itemId);
+
+    Task<ChestResponse> GetChest();
+
+    Task<ItemMoveResponse> MoveItem(uint itemId, ITEM_POSITION? destPlace, byte destX, byte destY);
 }

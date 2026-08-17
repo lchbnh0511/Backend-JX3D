@@ -808,10 +808,19 @@ public class GameSession : IEventHandler
     {
         //Log($"{data}");
     }
-
+    
     public void Ons2cItemAutoMove(ITEM_AUTO_MOVE_SYNC data)
     {
-        //Log($"{data}");
+        var movedId = State.Items.MoveTo(data.m_btSrcPos, data.m_btSrcX, data.m_btSrcY, data.m_btDestPos, data.m_btDestX, data.m_btDestY);
+
+        Log($"[Item] chuyển ({data.m_btSrcPos},{data.m_btSrcX},{data.m_btSrcY})"
+            + $" -> ({data.m_btDestPos},{data.m_btDestX},{data.m_btDestY})"
+            + $" itemId={movedId?.ToString() ?? "không thấy ở ô nguồn"}");
+
+        if (movedId == null) return;
+
+        // lấy ID làm key waiter
+        State.Waiters.Complete(movedId.Value, data);
     }
 
     public void OnItemChangeDurability(ITEM_DURABILITY_CHANGE data)
@@ -838,10 +847,12 @@ public class GameSession : IEventHandler
 
         State.Waiters.Complete(State.PlayerId, data);
     }
-
+    
     public void OnOpenStoreBox(byte[] pMsg)
     {
-        Log($"[Shop] OnOpenStoreBox {pMsg?.Length ?? 0} byte");
+        // Chỉ log. Không ai chờ gói này: nội dung rương về bằng các gói ITEM_SYNC riêng
+        // (m_btPlace = pos_exboxroom) nên GET /items/chest đọc kho là đủ.
+        Log($"[Chest] mở rương, payload {pMsg?.Length ?? 0} byte");
     }
 
     public void Ons2cSyncStoreItem(SSyncStoreItem data)

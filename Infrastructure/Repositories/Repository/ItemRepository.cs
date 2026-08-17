@@ -63,6 +63,61 @@ public class ItemRepository : IItemRepository
         }
     }
 
+    public ITEM_SYNC? GetAt(byte place, byte x, byte y)
+    {
+        lock (_gate)
+        {
+            return FindAt(place, x, y);
+        }
+    }
+
+    public int? MoveTo(byte srcPlace, byte srcX, byte srcY, byte destPlace, byte destX, byte destY)
+    {
+        lock (_gate)
+        {
+            var found = FindAt(srcPlace, srcX, srcY);
+
+            if (found == null) return null;
+
+            var moved = found.Value;
+
+            // Bỏ khỏi index cũ TRƯỚC khi đổi place, không thì tra sai chỗ mà xoá
+            if (_itemsByPlace.TryGetValue(moved.m_btPlace, out var oldBucket))
+                oldBucket.Remove(moved.m_dwID);
+
+            moved.m_btPlace = destPlace;
+            moved.m_btX = destX;
+            moved.m_btY = destY;
+
+            _items[moved.m_dwID] = moved;
+
+            if (!_itemsByPlace.TryGetValue(destPlace, out var destBucket))
+            {
+                destBucket = new Dictionary<int, ITEM_SYNC>();
+                _itemsByPlace.Add(destPlace, destBucket);
+            }
+
+            destBucket[moved.m_dwID] = moved;
+
+            return moved.m_dwID;
+        }
+    }
+
+    // Gọi trong lock
+    private ITEM_SYNC? FindAt(byte place, byte x, byte y)
+    {
+        if (!_itemsByPlace.TryGetValue(place, out var bucket))
+            return null;
+
+        foreach (var item in bucket.Values)
+        {
+            if (item.m_btX == x && item.m_btY == y)
+                return item;
+        }
+
+        return null;
+    }
+
     // Trả bản sao, không trả .Values (view sống - recv thread ghi giữa lúc caller duyệt là nổ)
     public IReadOnlyCollection<ITEM_SYNC> GetAll()
     {

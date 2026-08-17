@@ -141,4 +141,76 @@ public class ItemService : IITemService
 
         return true;
     }
+
+
+
+    public async Task<ChestResponse> GetChest()
+    {
+        var state = _sessionManager.Get(_currentUser.SessionId).Handler.State;
+
+        return await Task.FromResult(new ChestResponse
+        {
+            Items = Snapshot(state, ITEM_POSITION.pos_exboxroom),
+        });
+    }
+
+    public async Task<ItemMoveResponse> MoveItem(uint itemId, ITEM_POSITION? destPlace, byte destX, byte destY)
+    {
+        var session = _sessionManager.Get(_currentUser.SessionId);
+        var state = session.Handler.State;
+
+        var item = FindItem(itemId);
+
+        if (item.m_btPlace == (byte)ITEM_POSITION.pos_equip)
+            throw new BaseException.BadRequestException(
+                "item_equipped",
+                "Vật phẩm đang mặc trên người, tháo trang bị trước khi chuyển.");
+
+        // Để trống thì hiểu là đổi ô trong cùng kho hiện tại
+        var target = (byte)(destPlace ?? (ITEM_POSITION)item.m_btPlace);
+
+        if (target != (byte)ITEM_POSITION.pos_equiproom && target != (byte)ITEM_POSITION.pos_exboxroom)
+            throw new BaseException.BadRequestException(
+                "dest_place_unsupported",
+                "Chỉ chuyển được giữa túi (pos_equiproom) và rương (pos_exboxroom).");
+
+        // Không chặn "rương chưa mở": mình không theo dõi trạng thái mở/đóng nữa. Chuyển
+        // vào rương mà GS chưa cho phép thì nó bỏ qua lệnh, API trả 504 với lý do đã ghi rõ.
+        if (target == item.m_btPlace && destX == item.m_btX && destY == item.m_btY)
+            throw new BaseException.BadRequestException(
+                "same_slot",
+                "Ô đích trùng ô hiện tại.");
+        
+        var moved = await state.Waiters.SendAndWaitAsync<ITEM_AUTO_MOVE_SYNC>(
+            itemId,
+            () => session.GameServer.GetSender().SendPlayerUseItemPacket(itemId, item.m_btPlace, target, destX, destY),
+            GameCommand.Timeout,
+            GameCommand.ItemSettle);
+
+        if (moved == null)
+            throw new BaseException.ErrorException(
+                504,
+                "Gameserver_timeout",
+                "Game server không phản hồi lệnh chuyển vật phẩm, có thể ô đích đã có đồ "
+                + "hoặc vật phẩm không được phép cất vào rương.");
+
+        var after = state.Items.Get((int)itemId);
+
+        return new ItemMoveResponse
+        {
+            ItemId = (int)itemId,
+
+            // Lấy theo gói GS trả về, không theo cái mình gửi lên
+            SrcPlace = moved.Value.m_btSrcPos,
+            SrcX = moved.Value.m_btSrcX,
+            SrcY = moved.Value.m_btSrcY,
+            DestPlace = moved.Value.m_btDestPos,
+            DestX = moved.Value.m_btDestX,
+            DestY = moved.Value.m_btDestY,
+
+            Item = after == null ? null : _itemMapper.FromItemRequest(after.Value),
+            Inventory = Snapshot(state, ITEM_POSITION.pos_equiproom),
+            Chest = Snapshot(state, ITEM_POSITION.pos_exboxroom),
+        };
+    }
 }
