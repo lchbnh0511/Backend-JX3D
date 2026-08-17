@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using BackendJX3D.Infrastructure.Session.Data;
 
@@ -34,4 +35,30 @@ public static class PlayerConfigClient
         return JsonSerializer.Deserialize<PlayerConfigEnvelope>(body, JsonOptions)?.Data
                ?? PlayerConfig.Default();
     }
+
+
+    public static async Task<bool> SaveAsync(uint uuid, PlayerConfig config, CancellationToken ct = default)
+    {
+        var url = $"{BaseUrl.TrimEnd('/')}/api/v1/player";
+
+        var payload = PlayerConfigSaveRequest.From(uuid, config);
+
+        var json = JsonSerializer.Serialize(payload, WriteOptions);
+
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        using var response = await Http.PostAsync(url, content, ct);
+
+        return response.IsSuccessStatusCode;
+    }
+
+    /// <summary>
+    /// Tuỳ chọn cho chiều GHI. Không dùng lại JsonOptions được:
+    /// PropertyNameCaseInsensitive chỉ ảnh hưởng lúc ĐỌC, còn lúc ghi nó vẫn xuất
+    /// PascalCase ("Uuid", "SkillIdx") - API ngoài dùng camelCase nên phải đặt naming policy.
+    /// </summary>
+    private static readonly JsonSerializerOptions WriteOptions = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+    };
 }

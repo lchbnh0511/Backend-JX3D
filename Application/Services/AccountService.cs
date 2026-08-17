@@ -4,7 +4,9 @@ using BackendJX3D.Application.Interfaces.IServices;
 using BackendJX3D.Core.Base;
 using BackendJX3D.Core.Utils;
 using BackendJX3D.Infrastructure.Auth;
+using BackendJX3D.Infrastructure.External;
 using BackendJX3D.Infrastructure.Session;
+using BackendJX3D.Infrastructure.Session.Data;
 using Network.Bishop;
 using Network.GameServer;
 using Network.Header;
@@ -300,6 +302,30 @@ public class AccountService : IAccountService
         return "Success";
     }
     
+    private async Task SavePlayerConfig(PlayerState state)
+    {
+        var config = state.Config;
+
+        if (config == null || state.uuId == 0)
+        {
+            Console.WriteLine($"[Config] không có gì để lưu (uuId={state.uuId}, config={(config == null ? "null" : "có")})");
+            return;
+        }
+
+        try
+        {
+            var saved = await PlayerConfigClient.SaveAsync(state.uuId, config);
+
+            Console.WriteLine(saved
+                ? $"[Config] đã lưu cấu hình uuId={state.uuId}"
+                : $"[Config] API ngoài từ chối lưu cấu hình uuId={state.uuId}");
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine($"[Config] lỗi lưu cấu hình uuId={state.uuId}: {e.Message}");
+        }
+    }
+
     public async Task<string> LogoutServerAccount()
     {
         var session = _sessionManager.Get(_currentUser.SessionId);
@@ -308,6 +334,9 @@ public class AccountService : IAccountService
             throw new BaseException.NotFoundException("not_found", "null");
         
         Console.WriteLine("LogoutServerAccount Name: " + session.Handler.State.Name);
+
+        await SavePlayerConfig(session.Handler.State);
+
         session.GameServer.StopPing();
         session.GameServer?.GetSender()?.SendLogoutPacket(session.Handler.State.Name);
         session.Bishop.Client = null!;

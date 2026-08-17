@@ -26,6 +26,24 @@ public sealed class PlayerConfig
     };
 }
 
+
+public sealed class PlayerConfigSaveRequest
+{
+    public uint Uuid { get; set; }
+
+    public List<PlayerConfigSkill> Skills { get; set; } = [];
+    public List<PlayerConfigItem> Items { get; set; } = [];
+    public List<AutoPlayConfig> AutoPlay { get; set; } = [];
+
+    public static PlayerConfigSaveRequest From(uint uuid, PlayerConfig config) => new()
+    {
+        Uuid = uuid,
+        Skills = config.Skills ?? [],
+        Items = config.Items ?? [],
+        AutoPlay = config.AutoPlay ?? [],
+    };
+}
+
 //Bọc ngoài của API: { data, message, statusCode, code }
 public sealed class PlayerConfigEnvelope
 {
