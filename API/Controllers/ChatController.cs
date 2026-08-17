@@ -1,3 +1,4 @@
+using BackendJX3D.Application.DTOs.Request.Chat;
 using BackendJX3D.Application.DTOs.Response.Chat;
 using BackendJX3D.Application.Interfaces.IServices;
 using BackendJX3D.Core.Base;
@@ -34,9 +35,9 @@ public class ChatController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<BaseResponse<bool>>> SendMessage(int channelId, string message)
+    public async Task<ActionResult<BaseResponse<bool>>> SendMessage([FromBody] SendChatRequest request)
     {
-        var result = await chatService.SendMessage(channelId, message);
+        var result = await chatService.SendMessage(request.ChannelId, request.Message);
         return Ok(BaseResponse<bool>.OkResponse(result, "Gửi chat thành công."));
     }
 }

@@ -1,3 +1,4 @@
+using BackendJX3D.Application.DTOs.Request.Player;
 using BackendJX3D.Application.DTOs.Response.Player;
 using BackendJX3D.Application.Interfaces.IServices;
 using BackendJX3D.Core.Base;
@@ -41,16 +42,16 @@ public class PlayerController : ControllerBase
     }
     
     [HttpPost("running")]
-    public async Task<ActionResult<BaseResponse<PlayerRunningResponse>>> PlayerRunning(int nDesX,  int nDesY)
+    public async Task<ActionResult<BaseResponse<PlayerRunningResponse>>> PlayerRunning([FromBody] PlayerRunningRequest request)
     {
-        var result = await playerService.Running(nDesX, nDesY);
+        var result = await playerService.Running(request.DesX, request.DesY);
         return Ok(BaseResponse<PlayerRunningResponse>.OkResponse(result, "Running Success"));   
     }
 
     [HttpPost("add-attribute")]
-    public async Task<ActionResult<BaseResponse<PlayerAttributeResponse>>> UpdateAttributePoint(UI_PLAYER_ATTRIBUTE attribute, int point = 1)
+    public async Task<ActionResult<BaseResponse<PlayerAttributeResponse>>> UpdateAttributePoint([FromBody] PlayerAttributeRequest request)
     {
-        var result = await playerService.UpdateAttributePoint(attribute, point);
+        var result = await playerService.UpdateAttributePoint(request.Attribute, request.Point);
         return Ok(BaseResponse<PlayerAttributeResponse>.OkResponse(result, "Cộng điểm tiềm năng thành công."));
     }
 

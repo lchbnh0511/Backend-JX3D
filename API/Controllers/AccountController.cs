@@ -35,9 +35,9 @@ namespace BackendJX3D.API.Controllers
         
         [Authorize]
         [HttpPost("create-characters")]
-        public async Task<ActionResult<BaseResponse<CreateCharacterResponse>>> CreateCharacter(string charName, byte byRoleNo, ushort wPortraitID)
+        public async Task<ActionResult<BaseResponse<CreateCharacterResponse>>> CreateCharacter([FromBody] CreateCharacterRequest request)
         {
-            var result = await accountService.CreateCharacter(charName, byRoleNo, wPortraitID);
+            var result = await accountService.CreateCharacter(request.CharName, request.Gender, request.Series);
             return Ok(BaseResponse<CreateCharacterResponse>.OkResponse(result, "Tạo nhân vật thành công."));
         }
         

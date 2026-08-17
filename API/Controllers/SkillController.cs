@@ -1,3 +1,4 @@
+using BackendJX3D.Application.DTOs.Request.Skill;
 using BackendJX3D.Application.DTOs.Response.Skill;
 using BackendJX3D.Application.Interfaces.IServices;
 using BackendJX3D.Core.Base;
@@ -26,9 +27,9 @@ public class SkillController : ControllerBase
     }
 
     [HttpPost("add-point-skill")]
-    public async Task<ActionResult<BaseResponse<SkillPointResponse>>> UpdatePointSkill(int skillId, int points)
+    public async Task<ActionResult<BaseResponse<SkillPointResponse>>> UpdatePointSkill([FromBody] SkillPointRequest request)
     {
-        var result = await skillService.UpdatePointSkill(skillId, points);
-        return Ok(BaseResponse<SkillPointResponse>.OkResponse(result, $"Cộng {points} điểm kỹ năng {skillId} thành công."));
+        var result = await skillService.UpdatePointSkill(request.SkillId, request.Points);
+        return Ok(BaseResponse<SkillPointResponse>.OkResponse(result, $"Cộng {request.Points} điểm kỹ năng {request.SkillId} thành công."));
     }
 }

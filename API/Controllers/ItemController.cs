@@ -1,3 +1,4 @@
+using BackendJX3D.Application.DTOs.Request.Item;
 using BackendJX3D.Application.DTOs.Response.Item;
 using BackendJX3D.Application.Interfaces.IServices;
 using BackendJX3D.Core.Base;
@@ -34,23 +35,23 @@ public class ItemController : ControllerBase
     }
     
     [HttpPost("use-item")]
-    public async Task<ActionResult<BaseResponse<ItemUseResponse>>> UseItem(uint itemId)
+    public async Task<ActionResult<BaseResponse<ItemUseResponse>>> UseItem([FromBody] ItemActionRequest request)
     {
-        var result = await itemService.UseItem(itemId);
+        var result = await itemService.UseItem(request.ItemId);
         return Ok(BaseResponse<ItemUseResponse>.OkResponse(result, "Dùng vật phẩm thành công."));
     }
     
     [HttpPost("unequip")]
-    public async Task<ActionResult<BaseResponse<ItemUseResponse>>> UnEquipItem(uint itemId)
+    public async Task<ActionResult<BaseResponse<ItemUseResponse>>> UnEquipItem([FromBody] ItemActionRequest request)
     {
-        var result = await itemService.UnEquipItem(itemId);
+        var result = await itemService.UnEquipItem(request.ItemId);
         return Ok(BaseResponse<ItemUseResponse>.OkResponse(result, "Tháo trang bị thành công."));
     }
     
     [HttpPost("throw-away-item")]
-    public async Task<ActionResult<BaseResponse<bool>>> ThrowAwayItem(uint itemId)
+    public async Task<ActionResult<BaseResponse<bool>>> ThrowAwayItem([FromBody] ItemActionRequest request)
     {
-        var result = await itemService.ThrowAwayItem(itemId);
+        var result = await itemService.ThrowAwayItem(request.ItemId);
         return Ok(BaseResponse<bool>.OkResponse(result, "Vứt Item thành công."));
     }
 }

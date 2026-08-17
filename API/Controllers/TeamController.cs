@@ -1,3 +1,4 @@
+using BackendJX3D.Application.DTOs.Request.Team;
 using BackendJX3D.Application.DTOs.Response.Team;
 using BackendJX3D.Application.Interfaces.IServices;
 using BackendJX3D.Core.Base;
@@ -40,32 +41,32 @@ public class TeamController : ControllerBase
     }
 
     [HttpPost("kick")]
-    public async Task<ActionResult<BaseResponse<TeamResponse>>> KickMember(uint playerId)
+    public async Task<ActionResult<BaseResponse<TeamResponse>>> KickMember([FromBody] TeamTargetRequest request)
     {
-        var result = await teamService.KickMember(playerId);
+        var result = await teamService.KickMember(request.PlayerId);
         return Ok(BaseResponse<TeamResponse>.OkResponse(result, "Trục xuất thành viên thành công."));
     }
 
     [HttpPost("captain")]
-    public async Task<ActionResult<BaseResponse<TeamResponse>>> ChangeCaptain(uint playerId)
+    public async Task<ActionResult<BaseResponse<TeamResponse>>> ChangeCaptain([FromBody] TeamTargetRequest request)
     {
-        var result = await teamService.ChangeCaptain(playerId);
+        var result = await teamService.ChangeCaptain(request.PlayerId);
         return Ok(BaseResponse<TeamResponse>.OkResponse(result, "Nhường chức đội trưởng thành công."));
     }
 
     [HttpPost("invite/reply")]
-    public async Task<ActionResult<BaseResponse<TeamResponse>>> ReplyInvite(int idx, bool accept)
+    public async Task<ActionResult<BaseResponse<TeamResponse>>> ReplyInvite([FromBody] TeamInviteReplyRequest request)
     {
-        var result = await teamService.ReplyInvite(idx, accept);
-        return Ok(BaseResponse<TeamResponse>.OkResponse(result, accept ? "Đã vào đội." : "Đã từ chối lời mời."));
+        var result = await teamService.ReplyInvite(request.Idx, request.Accept);
+        return Ok(BaseResponse<TeamResponse>.OkResponse(result, request.Accept ? "Đã vào đội." : "Đã từ chối lời mời."));
     }
 
     [HttpPost("applicant/reply")]
-    public async Task<ActionResult<BaseResponse<TeamResponse>>> ReplyJoinRequest(uint playerId, bool accept)
+    public async Task<ActionResult<BaseResponse<TeamResponse>>> ReplyJoinRequest([FromBody] TeamApplicantReplyRequest request)
     {
-        var result = await teamService.ReplyJoinRequest(playerId, accept);
+        var result = await teamService.ReplyJoinRequest(request.PlayerId, request.Accept);
         return Ok(BaseResponse<TeamResponse>.OkResponse(
-            result, accept ? "Đã nhận vào đội." : "Đã từ chối đơn xin vào đội."));
+            result, request.Accept ? "Đã nhận vào đội." : "Đã từ chối đơn xin vào đội."));
     }
 
     // Ba lệnh dưới GS không trả gói phản hồi cho người ra lệnh, nên chỉ báo là đã gửi.
@@ -78,16 +79,16 @@ public class TeamController : ControllerBase
     }
 
     [HttpPost("invite")]
-    public async Task<ActionResult<BaseResponse<bool>>> InviteMember(uint playerId)
+    public async Task<ActionResult<BaseResponse<bool>>> InviteMember([FromBody] TeamTargetRequest request)
     {
-        var result = await teamService.InviteMember(playerId);
+        var result = await teamService.InviteMember(request.PlayerId);
         return Ok(BaseResponse<bool>.OkResponse(result, "Đã gửi lời mời vào đội."));
     }
 
     [HttpPost("join")]
-    public async Task<ActionResult<BaseResponse<bool>>> JoinTeam(uint playerId)
+    public async Task<ActionResult<BaseResponse<bool>>> JoinTeam([FromBody] TeamTargetRequest request)
     {
-        var result = await teamService.JoinTeam(playerId);
+        var result = await teamService.JoinTeam(request.PlayerId);
         return Ok(BaseResponse<bool>.OkResponse(result, "Đã gửi yêu cầu xin vào đội."));
     }
 }

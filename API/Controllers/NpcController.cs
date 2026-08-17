@@ -1,3 +1,4 @@
+using BackendJX3D.Application.DTOs.Request.Npc;
 using BackendJX3D.Application.DTOs.Response.Item;
 using BackendJX3D.Application.DTOs.Response.Npc;
 using BackendJX3D.Application.Interfaces.IServices;
@@ -28,16 +29,16 @@ public class NpcController : ControllerBase
     }
 
     [HttpPost("dialog")]
-    public async Task<ActionResult<BaseResponse<NpcDialogResponse>>> OpenDialog(uint npcId)
+    public async Task<ActionResult<BaseResponse<NpcDialogResponse>>> OpenDialog([FromBody] NpcDialogRequest request)
     {
-        var result = await npcService.OpenDialog(npcId);
+        var result = await npcService.OpenDialog(request.NpcId);
         return Ok(BaseResponse<NpcDialogResponse>.OkResponse(result, "Mở hội thoại NPC thành công."));
     }
 
     [HttpPost("dialog/select")]
-    public async Task<ActionResult<BaseResponse<NpcDialogResponse>>> SelectDialogOption(int index)
+    public async Task<ActionResult<BaseResponse<NpcDialogResponse>>> SelectDialogOption([FromBody] NpcDialogSelectRequest request)
     {
-        var result = await npcService.SelectDialogOption(index);
+        var result = await npcService.SelectDialogOption(request.Index);
         return Ok(BaseResponse<NpcDialogResponse>.OkResponse(result, "Chọn hội thoại thành công."));
     }
 
@@ -49,9 +50,9 @@ public class NpcController : ControllerBase
     }
     
     [HttpPost("shop/buy")]
-    public async Task<ActionResult<BaseResponse<ShopBuyResponse>>> BuyItem(int buyIdx, int count = 1)
+    public async Task<ActionResult<BaseResponse<ShopBuyResponse>>> BuyItem([FromBody] ShopBuyRequest request)
     {
-        var result = await npcService.BuyItem(buyIdx, count);
+        var result = await npcService.BuyItem(request.BuyIdx, request.Count);
         return Ok(BaseResponse<ShopBuyResponse>.OkResponse(result, result.Message));
     }
 }
