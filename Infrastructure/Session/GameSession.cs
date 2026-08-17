@@ -549,13 +549,26 @@ public class GameSession : IEventHandler
             " m_nCurPoint " + data.m_nCurPoint +
             " m_nLeavePoint " + data.m_nLeavePoint);
 
-        State.Attribute = data;
-
-        // GS chưa chắc gửi lại CURPLAYER_SYNC -> tự trừ điểm tồn để lần gọi kế tiếp kiểm đúng
-        if (State.CurPlayer is { } curAttr && data.m_nLeavePoint >= 0)
+        if (State.CurPlayer is { } cur)
         {
-            curAttr.m_wAttributePoint = (ushort)data.m_nLeavePoint;
-            State.CurPlayer = curAttr;
+            var value = (ushort)Math.Clamp(data.m_nBasePoint, 0, ushort.MaxValue);
+
+            switch ((UI_PLAYER_ATTRIBUTE)data.m_btAttribute)
+            {
+                case UI_PLAYER_ATTRIBUTE.UIPA_STRENGTH:  cur.m_wStrength  = value; break;
+                case UI_PLAYER_ATTRIBUTE.UIPA_DEXTERITY: cur.m_wDexterity = value; break;
+                case UI_PLAYER_ATTRIBUTE.UIPA_VITALITY:  cur.m_wVitality  = value; break;
+                case UI_PLAYER_ATTRIBUTE.UIPA_ENERGY:    cur.m_wEngergy   = value; break;
+
+                default:
+                    Log($"[Attribute] mã chỉ số lạ {data.m_btAttribute}, không biết ghi vào đâu");
+                    break;
+            }
+
+            if (data.m_nLeavePoint >= 0)
+                cur.m_wAttributePoint = (ushort)Math.Clamp(data.m_nLeavePoint, 0, ushort.MaxValue);
+
+            State.CurPlayer = cur;
         }
 
         State.Waiters.Complete(data.m_btAttribute, data);

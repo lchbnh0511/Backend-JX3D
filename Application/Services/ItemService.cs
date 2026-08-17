@@ -154,7 +154,8 @@ public class ItemService : IITemService
         });
     }
 
-    public async Task<ItemMoveResponse> MoveItem(uint itemId, ITEM_POSITION? destPlace, byte destX, byte destY)
+
+    public async Task<ItemMoveResponse> MoveItem(uint itemId, ITEM_POSITION destPlace)
     {
         var session = _sessionManager.Get(_currentUser.SessionId);
         var state = session.Handler.State;
@@ -166,24 +167,22 @@ public class ItemService : IITemService
                 "item_equipped",
                 "Vật phẩm đang mặc trên người, tháo trang bị trước khi chuyển.");
 
-        // Để trống thì hiểu là đổi ô trong cùng kho hiện tại
-        var target = (byte)(destPlace ?? (ITEM_POSITION)item.m_btPlace);
+        var target = (byte)destPlace;
 
         if (target != (byte)ITEM_POSITION.pos_equiproom && target != (byte)ITEM_POSITION.pos_exboxroom)
             throw new BaseException.BadRequestException(
                 "dest_place_unsupported",
-                "Chỉ chuyển được giữa túi (pos_equiproom) và rương (pos_exboxroom).");
+                "Chỉ chuyển được giữa túi (pos_equiproom = 3) và rương (pos_exboxroom = 4).");
 
-        // Không chặn "rương chưa mở": mình không theo dõi trạng thái mở/đóng nữa. Chuyển
-        // vào rương mà GS chưa cho phép thì nó bỏ qua lệnh, API trả 504 với lý do đã ghi rõ.
-        if (target == item.m_btPlace && destX == item.m_btX && destY == item.m_btY)
+        if (target == item.m_btPlace)
             throw new BaseException.BadRequestException(
-                "same_slot",
-                "Ô đích trùng ô hiện tại.");
-        
+                "same_place",
+                "Vật phẩm đã ở kho này rồi. API chỉ chuyển giữa hai kho, không đổi ô trong cùng kho.");
+
         var moved = await state.Waiters.SendAndWaitAsync<ITEM_AUTO_MOVE_SYNC>(
             itemId,
-            () => session.GameServer.GetSender().SendPlayerUseItemPacket(itemId, item.m_btPlace, target, destX, destY),
+            () => session.GameServer.GetSender()
+                .SendPlayerUseItemPacket(itemId, item.m_btPlace, target, item.m_btX, item.m_btY),
             GameCommand.Timeout,
             GameCommand.ItemSettle);
 
@@ -191,7 +190,7 @@ public class ItemService : IITemService
             throw new BaseException.ErrorException(
                 504,
                 "Gameserver_timeout",
-                "Game server không phản hồi lệnh chuyển vật phẩm, có thể ô đích đã có đồ "
+                "Game server không phản hồi lệnh chuyển vật phẩm, có thể kho đích đã đầy "
                 + "hoặc vật phẩm không được phép cất vào rương.");
 
         var after = state.Items.Get((int)itemId);

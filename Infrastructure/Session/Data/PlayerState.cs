@@ -15,7 +15,6 @@ public class PlayerState
     public WORLD_SYNC? World { get; set; }
 
     public CURPLAYER_NORMAL_SYNC? PlayerStats { get; set; }
-    public PLAYER_ATTRIBUTE_SYNC? Attribute { get; set; }
 
     // volatile để request thread thấy ngay cái recv thread vừa ghi.
     public volatile NpcDialog? Dialog;

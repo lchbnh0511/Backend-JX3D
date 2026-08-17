@@ -65,7 +65,7 @@ public class ItemController : ControllerBase
     [HttpPost("move")]
     public async Task<ActionResult<BaseResponse<ItemMoveResponse>>> MoveItem([FromBody] ItemMoveRequest request)
     {
-        var result = await itemService.MoveItem(request.ItemId, request.DestPlace, request.DestX, request.DestY);
+        var result = await itemService.MoveItem(request.ItemId, request.DestPlace);
         return Ok(BaseResponse<ItemMoveResponse>.OkResponse(result, "Chuyển vật phẩm thành công."));
     }
 }

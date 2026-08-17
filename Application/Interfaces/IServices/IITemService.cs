@@ -15,5 +15,5 @@ public interface IITemService
 
     Task<ChestResponse> GetChest();
 
-    Task<ItemMoveResponse> MoveItem(uint itemId, ITEM_POSITION? destPlace, byte destX, byte destY);
+    Task<ItemMoveResponse> MoveItem(uint itemId, ITEM_POSITION destPlace);
 }
