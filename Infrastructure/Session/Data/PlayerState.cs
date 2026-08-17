@@ -5,6 +5,7 @@ using Network.Header;
 
 public class PlayerState
 {
+    public uint uuId { get; set; }
     public uint PlayerId { get; set; }
     public string? Name { get; set; }
 
@@ -20,6 +21,8 @@ public class PlayerState
     public volatile NpcDialog? Dialog;
     
     public volatile ShopState? Shop;
+
+    public volatile PlayerConfig? Config;
 
 
     public PacketWaiters Waiters { get; } = new();

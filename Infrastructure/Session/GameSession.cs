@@ -3,6 +3,7 @@ using BackendJX3D.Domain.Entities;
 using BackendJX3D.Core.Base;
 using BackendJX3D.Core.Store;
 using BackendJX3D.Core.Utils;
+using BackendJX3D.Infrastructure.External;
 using Network.Header;
 using Network.Bishop;
 using System.Net;
@@ -313,13 +314,38 @@ public class GameSession : IEventHandler
             QueryChatChannels(data.TeamFactionInfo, data.dwTongNameID);
     }
 
+
+    private void LoadPlayerConfig(uint uuid)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var config = await PlayerConfigClient.FetchAsync(uuid);
+                State.Config = config;
+                
+                Log(config.Skills == null
+                    ? $"[Config] uuId={uuid} chưa có cấu hình -> dùng AutoPlay mặc định"
+                    : $"[Config] đã nạp uuId={uuid}: {config.Skills.Count} skill, "
+                      + $"{config.Items?.Count ?? 0} item, {config.AutoPlay.Count} autoPlay");
+            }
+            catch (Exception e)
+            {
+                Log($"[Config] lỗi nạp cấu hình uuId={uuid}: {e.Message}");
+            }
+        });
+    }
+
     public void OnSyncNpc(NPC_SYNC data)
     {
         if (State.PlayerId == 0)
         {
+            State.uuId = HashHelper.FileNameHash(data.GetName());
             State.PlayerId = data.ID;
             State.Name = data.GetName();
             State.PlayerNpc = data;
+
+            LoadPlayerConfig(State.uuId);
             return;
         }
 
